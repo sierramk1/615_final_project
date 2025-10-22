@@ -1,4 +1,4 @@
-# 615_final_project
+# OptiLearn
 Gen-AI assisted project visualizing optimization algorithms.
 
 Optimization algorithms are central to modern computer science, engineering, and statistics, providing powerful frameworks for solving complex problems and analyzing large-scale data (Chaudhary et al., 2024). As datasets and models continue to grow in size, these methods have become increasingly necessary for efficient computation, allowing statisticians and engineers to process data without overwhelming computational resources (Lange et al., 2014). Despite their importance, optimization algorithms can be complex and conceptually challenging to understand, particularly in higher dimensions. One-dimensional algorithms can often be demonstrated using static images, but multi-dimensional optimization algorithms operate in non-linear spaces that can be difficult to comprehend. Although some sources provide animations, most lack interactivity, limiting the user in their learning process. 
