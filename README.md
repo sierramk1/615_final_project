@@ -9,10 +9,12 @@ A key aspect of this project is the integration of generative AI into the develo
 
 To follow the project for reproduction, you can download the files and run the application locally. The repository includes all necessary code, dependencies, and instructions to set up the environment. Users can interact with each optimization algorithm, adjust parameters, and visualize convergence behavior in real time. Detailed documentation and comments are provided to explain the implementation, as well as how generative AI was leveraged in the development process.
 
+```text
 OptiLearn/
-├── algorithms/        # Python implementations of the optimization algorithms
-├── notebooks/         # Jupyter notebooks for testing and demonstrating algorithms
-├── visualizations/    # Saved plots and interactive visualization outputs
-├── frontend/          # JavaScript/HTML files for interactive UI
-├── documentation/     # Development logs, screenshots, tutorial materials
-└── README.md          # Project description and instructions
+├── algorithms/ # Python implementations of the optimization algorithms
+├── notebooks/ # Jupyter notebooks for testing and demonstrating algorithms
+├── visualizations/ # Saved plots and interactive visualization outputs
+├── frontend/ # JavaScript/HTML files for interactive UI
+├── documentation/ # Development logs, screenshots, tutorial materials
+└── README.md # Project description and instructions
+```
