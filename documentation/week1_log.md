@@ -4,7 +4,7 @@ This week, the project goals were:
 -- Install and learn Gemini CLI: explore its capabilities for visualization, UI generation, etc	
 
 The following was accomplished:
-The system architecture is outlined in the README file, and the corresponding folders were added to the repository. Gemini CLI was easy to install and setup with my personal google account, but not possible with umich accounts. It works great for git commands and tells you how to run scripts it writes. I asked it several basic prompts to test its capabilities and it excelled very well at these. Pictures of the Gemini output can be found in the ai_interactions folder.
+The system architecture is outlined in the README file, and the corresponding folders were added to the repository. Gemini CLI was easy to install and setup with my personal google account, but not possible with umich accounts. It works great for git commands and tells you how to run scripts it writes. When you ask it to complete something it will suggest a solution and then ask if it can be implemented or if you would like to modify it, which is helpful. I asked it several basic prompts to test its capabilities and it excelled very well at these. Pictures of the Gemini output can be found in the ai_interactions folder. 
 
 These are the prompts I asked it:
 Write a Python function that computes the factorial of a number using recursion.
