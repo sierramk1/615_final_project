@@ -28,8 +28,8 @@ function BisectionComponent() {
   const [tolerance, setTolerance] = useState('1e-6');
   const [maxIterations, setMaxIterations] = useState('100');
 
-  // State to trigger calculation manually
-  const [triggerCalculation, setTriggerCalculation] = useState(0);
+  // State to trigger calculation automatically (removed manual trigger)
+  // const [triggerCalculation, setTriggerCalculation] = useState(0);
 
   // Animation states
   const [animationSteps, setAnimationSteps] = useState([]);
@@ -133,7 +133,7 @@ function BisectionComponent() {
     } catch (e) {
       setError(e.message);
     }
-  }, [triggerCalculation, funcString, aValue, bValue, tolerance, maxIterations, myFunction]); // DEPENDS ON triggerCalculation and input values
+  }, [funcString, aValue, bValue, tolerance, maxIterations, myFunction]); // Now depends directly on inputs
 
   // --- Animation Control and Navigations ---
   useEffect(() => {
@@ -169,10 +169,6 @@ function BisectionComponent() {
   const handleNextStep = () => {
     setIsPlaying(false);
     setCurrentStepIndex(prev => Math.min(animationSteps.length - 1, prev + 1));
-  };
-
-  const handleCalculate = () => { // NEW: Calculate button handler
-    setTriggerCalculation(prev => prev + 1);
   };
 
   // --- Plot Data Generation for Current Frame ---
@@ -246,25 +242,44 @@ function BisectionComponent() {
   }, [currentStepIndex, animationSteps, error, myFunction, staticXBounds, staticYBounds]);
 
   return (
-    <div style={{ border: 'none', padding: '10px', margin: '20px 0' }}> {/* Removed border */}
+    <div style={{ padding: '10px', margin: '20px 0' }}> {/* Removed border */}
       <h3 style={{ fontSize: '2em' }}>Bisection Method</h3>
-      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ width: '45%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '40px' }}> {/* Removed justifyContent: 'space-between' */}
+        <div style={{ width: '25%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
+          {/* Description moved here */}
           <p style={{ marginBottom: '20px' }}>The Bisection Method is a root-finding algorithm that repeatedly bisects an interval and then selects a subinterval in which a root must lie for further processing. It requires the function to be continuous and for the initial interval [a, b] to have f(a) and f(b) with opposite signs, guaranteeing a root within that interval.</p>
-          <div>
+
+          {/* Input fields */}
+          <div style={{ marginBottom: '10px' }}>
             <label>Function f(x): <input type="text" value={funcString} onChange={(e) => setFuncString(e.target.value)} style={{ marginLeft: '10px', width: '200px' }} /></label>
           </div>
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ marginBottom: '10px' }}>
             <label>Interval a: <input type="number" value={aValue} onChange={(e) => setAValue(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
-            <label style={{ marginLeft: '20px' }}>Interval b: <input type="number" value={bValue} onChange={(e) => setBValue(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
           </div>
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Interval b: <input type="number" value={bValue} onChange={(e) => setBValue(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
+          </div>
+          <div style={{ marginBottom: '10px' }}>
             <label>Tolerance: <input type="number" value={tolerance} onChange={(e) => setTolerance(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
-            <label style={{ marginLeft: '20px' }}>Max Iterations: <input type="number" value={maxIterations} onChange={(e) => setMaxIterations(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Max Iterations: <input type="number" value={maxIterations} onChange={(e) => setMaxIterations(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
           </div>
 
-          <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}> {/* Changed to column layout */}
-            <button onClick={handleCalculate} disabled={false} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>Calculate</button>
+          {/* Iteration & Root Display */}
+          {error ? (
+            <p style={{ color: 'orange', marginTop: '10px' }}>Warning: {error}</p>
+          ) : currentRoot !== null ? (
+            <p style={{ marginTop: '10px' }}><strong>Final Root:</strong> <strong>{currentRoot.toFixed(6)}</strong></p>
+          ) : (
+            <p style={{ marginTop: '10px' }}>Enter function and interval to calculate root...</p>
+          )}
+          {animationSteps.length > 0 && !error && (
+            <p>Iteration: {currentStepIndex + 1} / {animationSteps.length}</p>
+          )}
+
+          {/* Control Buttons */}
+          <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}> 
             <button onClick={handlePlayPause} disabled={animationSteps.length < 2 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
               {isPlaying ? 'Pause' : 'Play'}
             </button>
@@ -277,31 +292,20 @@ function BisectionComponent() {
             <button onClick={handleReset} disabled={animationSteps.length === 0 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
               Reset
             </button>
-            {animationSteps.length > 0 && !error && (
-              <span style={{ marginLeft: '10px' }}>Iteration: {currentStepIndex + 1} / {animationSteps.length}</span>
-            )}
             <button onClick={() => setShowGraph(!showGraph)} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
               {showGraph ? 'Show Pseudocode' : 'Show Graph'}
             </button>
           </div>
-
-          {error ? (
-            <p style={{ color: 'orange', marginTop: '10px' }}>Warning: {error}</p>
-          ) : currentRoot !== null ? (
-            <p style={{ marginTop: '10px' }}>Final Root: <strong>{currentRoot.toFixed(6)}</strong></p>
-          ) : (
-            <p style={{ marginTop: '10px' }}>Enter function and interval to calculate root...</p>
-          )}
         </div>
 
-        <div style={{ width: '55%' }}> {/* Right side: Graph or Pseudocode */}
+        <div style={{ width: '75%', marginLeft: '40px' }}> {/* Right side: Graph or Pseudocode + Description */}
           {showGraph ? (
             plotData.length > 0 && !error && (
               <Plot
                 data={plotData}
                 layout={{
-                  width: 800,
-                  height: 500,
+                  width: '100%', // Use 100% width to fill parent div
+                  height: 600, // Increased height
                   title: `Plot of f(x) = ${funcString}`,
                   xaxis: { title: 'x', range: staticXBounds }, // Use static range
                   yaxis: { title: 'f(x)', range: staticYBounds }, // Use static range
@@ -311,7 +315,7 @@ function BisectionComponent() {
               />
             )
           ) : (
-            <div style={{ marginTop: '20px', padding: '10px', border: '1px dashed #ccc' }}>
+            <div style={{ marginTop: '0px', padding: '10px', border: '1px solid black', backgroundColor: 'white' }}>
               <h4>Bisection Method Pseudocode</h4>
               <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {`# Pseudocode for the Bisection Method

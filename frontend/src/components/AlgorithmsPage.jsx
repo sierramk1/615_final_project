@@ -32,17 +32,17 @@ function AlgorithmsPage() {
       </div>
 
       <div style={{ margin: '0 0 40px 0', display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-        <Link to="#bisection-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Bisection</Link>
-        <Link to="#golden-search-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Golden Search</Link>
-        <Link to="#newton-raphson-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Newton-Raphson</Link>
-        <Link to="#secant-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Secant</Link>
-        <Link to="#gradient-descent-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Gradient Descent</Link>
-        <Link to="#newtons-method-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Newton's Method</Link>
+        <a href="#bisection-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Bisection</a>
+        <a href="#golden-search-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Golden Search</a>
+        <a href="#newton-raphson-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Newton-Raphson</a>
+        <a href="#secant-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Secant</a>
+        <a href="#gradient-descent-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Gradient Descent</a>
+        <a href="#newtons-method-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Newton's Method</a>
       </div>
       {/* --- END NEW TOP HEADER AND NAVIGATION --- */}
 
       {/* --- One-Dimensional Algorithms --- */}
-      <h2 style={{ marginTop: '40px', paddingBottom: '10px', fontSize: '2.5em' }}>One-Dimensional Algorithms</h2> {/* Removed borderBottom */}
+      <h2 style={{ marginTop: '40px', paddingBottom: '10px', fontSize: '2.5em' }}>One-Dimensional Algorithms</h2> 
       <div id="bisection-component"> 
         <BisectionComponent />
       </div>
@@ -57,7 +57,7 @@ function AlgorithmsPage() {
       </div>
 
       {/* --- Multi-Dimensional Algorithms --- */}
-      <h2 style={{ marginTop: '40px', paddingBottom: '10px', fontSize: '2.5em' }}>Multi-Dimensional Algorithms</h2> {/* Removed borderBottom */}
+      <h2 style={{ marginTop: '40px', paddingBottom: '10px', fontSize: '2.5em' }}>Multi-Dimensional Algorithms</h2> 
       <div id="gradient-descent-component"> 
         <GradientDescentComponent />
       

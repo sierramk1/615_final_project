@@ -11,8 +11,8 @@ function GoldenSearchComponent() {
   const [tolerance, setTolerance] = useState('1e-6');
   const [maxIterations, setMaxIterations] = useState('100');
 
-  // State to trigger calculation manually
-  const [triggerCalculation, setTriggerCalculation] = useState(0);
+  // State to trigger calculation automatically (removed manual trigger)
+  // const [triggerCalculation, setTriggerCalculation] = useState(0);
 
   // Animation states
   const [animationSteps, setAnimationSteps] = useState([]);
@@ -113,7 +113,7 @@ function GoldenSearchComponent() {
     } catch (e) {
       setError(e.message);
     }
-  }, [triggerCalculation, funcString, aValue, cValue, tolerance, maxIterations, myFunction]);
+  }, [funcString, aValue, cValue, tolerance, maxIterations, myFunction]); // Now depends directly on inputs
 
   // --- Animation Control and Navigations ---
   useEffect(() => {
@@ -149,10 +149,6 @@ function GoldenSearchComponent() {
   const handleNextStep = () => {
     setIsPlaying(false);
     setCurrentStepIndex(prev => Math.min(animationSteps.length - 1, prev + 1));
-  };
-
-  const handleCalculate = () => {
-    setTriggerCalculation(prev => prev + 1);
   };
 
   // --- Plot Data Generation for Current Frame ---
@@ -255,62 +251,70 @@ function GoldenSearchComponent() {
   }, [currentStepIndex, animationSteps, error, myFunction, staticXBounds, staticYBounds]);
 
   return (
-    <div style={{ border: '1px solid #ccc', padding: '10px', margin: '20px 0' }}>
+    <div style={{ padding: '10px', margin: '20px 0' }}> {/* Removed border */}
       <h3 style={{ fontSize: '2em' }}>Golden Search</h3>
-      <p>The Golden Section Search is a technique for finding the extremum (minimum or maximum) of a strictly unimodal function by successively narrowing the range of values inside which the extremum is known to exist. It uses the golden ratio (approximately 1.618) to determine the placement of test points, ensuring the interval shrinks by a constant factor at each step.</p>
-      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ width: '45%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
-          <div>
+      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: '40px' }}> {/* Added gap */}
+        <div style={{ width: '25%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
+          {/* Description moved here */}
+          <p style={{ marginBottom: '20px' }}>The Golden Section Search is a technique for finding the extremum (minimum or maximum) of a strictly unimodal function by successively narrowing the range of values inside which the extremum is known to exist. It uses the golden ratio (approximately 1.618) to determine the placement of test points, ensuring the interval shrinks by a constant factor at each step.</p>
+
+          {/* Input fields */}
+          <div style={{ marginBottom: '10px' }}>
             <label>Function f(x): <input type="text" value={funcString} onChange={(e) => setFuncString(e.target.value)} style={{ marginLeft: '10px', width: '200px' }} /></label>
           </div>
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ marginBottom: '10px' }}>
             <label>Interval a: <input type="number" value={aValue} onChange={(e) => setAValue(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
-            <label style={{ marginLeft: '20px' }}>Interval c: <input type="number" value={cValue} onChange={(e) => setCValue(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
           </div>
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Interval c: <input type="number" value={cValue} onChange={(e) => setCValue(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
+          </div>
+          <div style={{ marginBottom: '10px' }}>
             <label>Tolerance: <input type="number" value={tolerance} onChange={(e) => setTolerance(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
-            <label style={{ marginLeft: '20px' }}>Max Iterations: <input type="number" value={maxIterations} onChange={(e) => setMaxIterations(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Max Iterations: <input type="number" value={maxIterations} onChange={(e) => setMaxIterations(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
           </div>
 
-          <div style={{ marginTop: '15px' }}>
-            <button onClick={handleCalculate} disabled={false} style={{ marginRight: '10px' }}>Calculate</button>
-            <button onClick={handlePlayPause} disabled={animationSteps.length < 2 || error}>
-              {isPlaying ? 'Pause' : 'Play'}
-            </button>
-            <button onClick={handlePrevStep} disabled={currentStepIndex === 0 || error} style={{ marginLeft: '10px' }}>
-              Prev Step
-            </button>
-            <button onClick={handleNextStep} disabled={currentStepIndex >= animationSteps.length - 1 || error} style={{ marginLeft: '10px' }}>
-              Next Step
-            </button>
-            <button onClick={handleReset} disabled={animationSteps.length === 0 || error} style={{ marginLeft: '10px' }}>
-              Reset
-            </button>
-            {animationSteps.length > 0 && !error && (
-              <span style={{ marginLeft: '10px' }}>Iteration: {currentStepIndex + 1} / {animationSteps.length}</span>
-            )}
-            <button onClick={() => setShowGraph(!showGraph)} style={{ marginLeft: '10px' }}>
-              {showGraph ? 'Show Pseudocode' : 'Show Graph'}
-            </button>
-          </div>
-
+          {/* Iteration & Root Display */}
           {error ? (
             <p style={{ color: 'orange', marginTop: '10px' }}>Warning: {error}</p>
           ) : currentMin !== null ? (
-            <p style={{ marginTop: '10px' }}>Final Minimum: <strong>{currentMin.toFixed(6)}</strong></p>
+            <p style={{ marginTop: '10px' }}><strong>Final Minimum:</strong> <strong>{currentMin.toFixed(6)}</strong></p>
           ) : (
             <p style={{ marginTop: '10px' }}>Enter function and interval to calculate minimum...</p>
           )}
+          {animationSteps.length > 0 && !error && (
+            <p>Iteration: {currentStepIndex + 1} / {animationSteps.length}</p>
+          )}
+
+          {/* Control Buttons */}
+          <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}> 
+            <button onClick={handlePlayPause} disabled={animationSteps.length < 2 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              {isPlaying ? 'Pause' : 'Play'}
+            </button>
+            <button onClick={handlePrevStep} disabled={currentStepIndex === 0 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              Prev Step
+            </button>
+            <button onClick={handleNextStep} disabled={currentStepIndex >= animationSteps.length - 1 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              Next Step
+            </button>
+            <button onClick={handleReset} disabled={animationSteps.length === 0 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              Reset
+            </button>
+            <button onClick={() => setShowGraph(!showGraph)} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              {showGraph ? 'Show Pseudocode' : 'Show Graph'}
+            </button>
+          </div>
         </div>
 
-        <div style={{ width: '55%' }}> {/* Right side: Graph or Pseudocode */}
+        <div style={{ width: '75%', marginLeft: '40px' }}> {/* Right side: Graph or Pseudocode + Description */}
           {showGraph ? (
             plotData.length > 0 && !error && (
               <Plot
                 data={plotData}
                 layout={{
-                  width: 900,
-                  height: 600,
+                  width: '100%', // Use 100% width to fill parent div
+                  height: 600, // Increased height
                   title: `Plot of f(x) = ${funcString}`,
                   xaxis: { title: 'x', range: staticXBounds }, // Use static range
                   yaxis: { title: 'f(x)', range: staticYBounds }, // Use static range
@@ -320,12 +324,12 @@ function GoldenSearchComponent() {
               />
             )
           ) : (
-            <div style={{ marginTop: '20px', padding: '10px', border: '1px dashed #ccc' }}>
+            <div style={{ marginTop: '0px', padding: '10px', border: '1px solid black', backgroundColor: 'white' }}>
               <h4>Golden Section Search Pseudocode</h4>
               <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {`# Pseudocode for the Golden Section Search Method
 
-This algorithm finds the minimum of a unimodal function within a given interval [a, c] by successively narrowing the range.
+This algorithm finds the extremum (minimum or maximum) of a strictly unimodal function by successively narrowing the range of values inside which the extremum is known to exist. It uses the golden ratio (approximately 1.618) to determine the placement of test points, ensuring the interval shrinks by a constant factor at each step.
 
 **FUNCTION** GoldenSectionSearch(f, a, c, tol, max_iter)
 

@@ -216,62 +216,70 @@ function SecantComponent() {
   }, [currentStepIndex, animationSteps, error, myFunction, staticXBounds, staticYBounds]);
 
   return (
-    <div style={{ border: '1px solid #ccc', padding: '10px', margin: '20px 0' }}>
+    <div style={{ padding: '10px', margin: '20px 0' }}> {/* Removed border */}
       <h3 style={{ fontSize: '2em' }}>Secant Method</h3>
-      <p>The Secant method is a root-finding algorithm that uses a succession of roots of secant lines to better approximate a root of a function. It is similar to Newton's method but avoids the need for an analytical derivative by approximating it with a finite difference.</p>
-      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ width: '45%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
-          <div>
+      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: '40px' }}> {/* Added gap */}
+        <div style={{ width: '25%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
+          {/* Description moved here */}
+          <p style={{ marginBottom: '20px' }}>The Secant method is a root-finding algorithm that uses a succession of roots of secant lines to better approximate a root of a function. It is similar to Newton's method but avoids the need for an analytical derivative by approximating it with a finite difference.</p>
+
+          {/* Input fields */}
+          <div style={{ marginBottom: '10px' }}>
             <label>Function f(x): <input type="text" value={funcString} onChange={(e) => setFuncString(e.target.value)} style={{ marginLeft: '10px', width: '200px' }} /></label>
           </div>
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ marginBottom: '10px' }}>
             <label>Initial Guess x0: <input type="number" value={x0Value} onChange={(e) => setX0Value(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
-            <label style={{ marginLeft: '20px' }}>Initial Guess x1: <input type="number" value={x1Value} onChange={(e) => setX1Value(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
           </div>
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Initial Guess x1: <input type="number" value={x1Value} onChange={(e) => setX1Value(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
+          </div>
+          <div style={{ marginBottom: '10px' }}>
             <label>Tolerance: <input type="number" value={tolerance} onChange={(e) => setTolerance(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
-            <label style={{ marginLeft: '20px' }}>Max Iterations: <input type="number" value={maxIterations} onChange={(e) => setMaxIterations(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Max Iterations: <input type="number" value={maxIterations} onChange={(e) => setMaxIterations(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
           </div>
 
-          <div style={{ marginTop: '15px' }}>
-            <button onClick={handleCalculate} disabled={false} style={{ marginRight: '10px' }}>Calculate</button>
-            <button onClick={handlePlayPause} disabled={animationSteps.length < 2 || error}>
-              {isPlaying ? 'Pause' : 'Play'}
-            </button>
-            <button onClick={handlePrevStep} disabled={currentStepIndex === 0 || error} style={{ marginLeft: '10px' }}>
-              Prev Step
-            </button>
-            <button onClick={handleNextStep} disabled={currentStepIndex >= animationSteps.length - 1 || error} style={{ marginLeft: '10px' }}>
-              Next Step
-            </button>
-            <button onClick={handleReset} disabled={animationSteps.length === 0 || error} style={{ marginLeft: '10px' }}>
-              Reset
-            </button>
-            {animationSteps.length > 0 && !error && (
-              <span style={{ marginLeft: '10px' }}>Iteration: {currentStepIndex + 1} / {animationSteps.length}</span>
-            )}
-            <button onClick={() => setShowGraph(!showGraph)} style={{ marginLeft: '10px' }}>
-              {showGraph ? 'Show Pseudocode' : 'Show Graph'}
-            </button>
-          </div>
-
+          {/* Iteration & Root Display */}
           {error ? (
             <p style={{ color: 'orange', marginTop: '10px' }}>Warning: {error}</p>
           ) : currentRoot !== null ? (
-            <p style={{ marginTop: '10px' }}>Final Root: <strong>{currentRoot.toFixed(6)}</strong></p>
+            <p style={{ marginTop: '10px' }}><strong>Final Root:</strong> <strong>{currentRoot.toFixed(6)}</strong></p>
           ) : (
             <p style={{ marginTop: '10px' }}>Enter function and initial guesses to calculate root...</p>
           )}
+          {animationSteps.length > 0 && !error && (
+            <p>Iteration: {currentStepIndex + 1} / {animationSteps.length}</p>
+          )}
+
+          {/* Control Buttons */}
+          <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}> 
+            <button onClick={handlePlayPause} disabled={animationSteps.length < 2 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              {isPlaying ? 'Pause' : 'Play'}
+            </button>
+            <button onClick={handlePrevStep} disabled={currentStepIndex === 0 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              Prev Step
+            </button>
+            <button onClick={handleNextStep} disabled={currentStepIndex >= animationSteps.length - 1 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              Next Step
+            </button>
+            <button onClick={handleReset} disabled={animationSteps.length === 0 || error} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              Reset
+            </button>
+            <button onClick={() => setShowGraph(!showGraph)} style={{ backgroundColor: '#72A8C8', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>
+              {showGraph ? 'Show Pseudocode' : 'Show Graph'}
+            </button>
+          </div>
         </div>
 
-        <div style={{ width: '55%' }}> {/* Right side: Graph or Pseudocode */}
+        <div style={{ width: '75%', marginLeft: '40px' }}> {/* Right side: Graph or Pseudocode + Description */}
           {showGraph ? (
             plotData.length > 0 && !error && (
               <Plot
                 data={plotData}
                 layout={{
-                  width: 800,
-                  height: 500,
+                  width: '100%', // Use 100% width to fill parent div
+                  height: 600, // Increased height
                   title: `Plot of f(x) = ${funcString}`,
                   xaxis: { title: 'x', range: staticXBounds }, // Use static range
                   yaxis: { title: 'f(x)', range: staticYBounds }, // Use static range
@@ -281,7 +289,7 @@ function SecantComponent() {
               />
             )
           ) : (
-            <div style={{ marginTop: '20px', padding: '10px', border: '1px dashed #ccc' }}>
+            <div style={{ marginTop: '0px', padding: '10px', border: '1px solid black', backgroundColor: 'white' }}>
               <h4>Secant Method Pseudocode</h4>
               <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {`# Pseudocode for the Secant Method
@@ -336,7 +344,7 @@ This algorithm is a root-finding method that uses a succession of roots of secan
   END FOR
 
   // If max_iter reached without convergence
-  OUTPUT "Secant method did not converge after " + max_iter + " iterations."
+  OUTPUT "Secant method did not converge after " + max_iter + " iterations." 
   RETURN null
 
 **END FUNCTION**`}
