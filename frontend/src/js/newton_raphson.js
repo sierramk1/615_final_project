@@ -39,3 +39,4 @@ function newtonRaphson(f, fp, x0, tol = 1e-10, max_iter = 100) {
         convergence: false,
     };
 }
+module.exports = { newtonRaphson };

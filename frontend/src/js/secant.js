@@ -41,3 +41,4 @@ function secant(f, x0, x1, tol = 1e-10, max_iter = 100) {
         convergence: false,
     };
 }
+module.exports = { secant };
