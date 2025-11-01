@@ -1,15 +1,26 @@
 /**
- * Finds a root of a function using the Secant method.
+ * Finds a root of a function using the Secant method, yielding intermediate steps.
  * @param {function(number): number} f The objective function to find a root of.
  * @param {number} x0 The first initial guess.
  * @param {number} x1 The second initial guess.
  * @param {number} [tol=1e-10] The tolerance for convergence.
  * @param {number} [max_iter=100] The maximum number of iterations.
- * @returns {{root: number, f_root: number, iterations: number, convergence: boolean}} An object containing the root and other details.
+ * @yields {{x0: number, x1: number, x2: number, iter: number}} An object containing the two current points, the next guess, and iteration count.
+ * @returns {void} The generator finishes when convergence is met or max_iter is reached.
  */
-function secant(f, x0, x1, tol = 1e-10, max_iter = 100) {
+function* secantGenerator(f, x0, x1, tol = 1e-10, max_iter = 100) {
     let current_x0 = x0;
     let current_x1 = x1;
+
+    // Check if initial guesses are already roots
+    if (Math.abs(f(current_x0)) < tol) {
+        yield { x0: current_x0, x1: current_x1, x2: current_x0, iter: 0 };
+        return;
+    }
+    if (Math.abs(f(current_x1)) < tol) {
+        yield { x0: current_x0, x1: current_x1, x2: current_x1, iter: 0 };
+        return;
+    }
 
     for (let i = 0; i < max_iter; i++) {
         const f_x0 = f(current_x0);
@@ -21,24 +32,17 @@ function secant(f, x0, x1, tol = 1e-10, max_iter = 100) {
 
         const next_x = current_x1 - (f_x1 * (current_x1 - current_x0)) / (f_x1 - f_x0);
 
+        yield { x0: current_x0, x1: current_x1, x2: next_x, iter: i + 1 };
+
         if (Math.abs(next_x - current_x1) < tol) {
-            return {
-                root: next_x,
-                f_root: f(next_x),
-                iterations: i + 1,
-                convergence: true,
-            };
+            return; // Converged
         }
 
         current_x0 = current_x1;
         current_x1 = next_x;
     }
 
-    return {
-        root: current_x1,
-        f_root: f(current_x1),
-        iterations: max_iter,
-        convergence: false,
-    };
+    throw new Error(`Secant method did not converge in ${max_iter} iterations`);
 }
-module.exports = { secant };
+
+module.exports = { secant: secantGenerator };

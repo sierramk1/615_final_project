@@ -1,14 +1,21 @@
 /**
- * Finds a root of a function using the Newton-Raphson method.
+ * Finds a root of a function using the Newton-Raphson method, yielding intermediate steps.
  * @param {function(number): number} f The objective function to find a root of.
  * @param {function(number): number} fp The first derivative of the objective function.
  * @param {number} x0 The initial guess.
  * @param {number} [tol=1e-10] The tolerance for convergence.
  * @param {number} [max_iter=100] The maximum number of iterations.
- * @returns {{root: number, f_root: number, iterations: number, convergence: boolean}} An object containing the root and other details.
+ * @yields {{x0: number, x1: number, iter: number}} An object containing the current guess, next guess, and iteration count.
+ * @returns {void} The generator finishes when convergence is met or max_iter is reached.
  */
-function newtonRaphson(f, fp, x0, tol = 1e-10, max_iter = 100) {
+function* newtonRaphsonGenerator(f, fp, x0, tol = 1e-10, max_iter = 100) {
     let current_x = x0;
+
+    // Check if initial guess is already the root
+    if (Math.abs(f(current_x)) < tol) {
+        yield { x0: current_x, x1: current_x, iter: 0 };
+        return;
+    }
 
     for (let i = 0; i < max_iter; i++) {
         const f_x = f(current_x);
@@ -20,23 +27,16 @@ function newtonRaphson(f, fp, x0, tol = 1e-10, max_iter = 100) {
 
         const next_x = current_x - f_x / fp_x;
 
+        yield { x0: current_x, x1: next_x, iter: i + 1 };
+
         if (Math.abs(next_x - current_x) < tol) {
-            return {
-                root: next_x,
-                f_root: f(next_x),
-                iterations: i + 1,
-                convergence: true,
-            };
+            return; // Converged
         }
 
         current_x = next_x;
     }
 
-    return {
-        root: current_x,
-        f_root: f(current_x),
-        iterations: max_iter,
-        convergence: false,
-    };
+    throw new Error(`Newton-Raphson method did not converge in ${max_iter} iterations`);
 }
-module.exports = { newtonRaphson };
+
+module.exports = { newtonRaphson: newtonRaphsonGenerator };
