@@ -242,9 +242,8 @@ function BisectionComponent() {
   }, [currentStepIndex, animationSteps, error, myFunction, staticXBounds, staticYBounds]);
 
   return (
-    <div style={{ padding: '10px', margin: '20px 0' }}> {/* Removed border */}
-      <h3 style={{ fontSize: '2em' }}>Bisection Method</h3>
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '40px' }}> {/* Removed justifyContent: 'space-between' */}
+    <div style={{ padding: '0px', margin: '0px' }}> {/* Removed padding and margin */}
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '40px' }}> 
         <div style={{ width: '25%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
           {/* Description moved here */}
           <p style={{ marginBottom: '20px' }}>The Bisection Method is a root-finding algorithm that repeatedly bisects an interval and then selects a subinterval in which a root must lie for further processing. It requires the function to be continuous and for the initial interval [a, b] to have f(a) and f(b) with opposite signs, guaranteeing a root within that interval.</p>

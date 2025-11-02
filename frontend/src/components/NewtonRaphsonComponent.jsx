@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { newtonRaphson } from '../js/newton_raphson.js'; // Now a generator
-import * as math from 'mathjs';
+import * as math from 'mathjs'; // FIXED: Corrected import syntax
 import Plot from 'react-plotly.js';
 
 function NewtonRaphsonComponent() {
@@ -11,8 +11,8 @@ function NewtonRaphsonComponent() {
   const [tolerance, setTolerance] = useState('1e-6');
   const [maxIterations, setMaxIterations] = useState('100');
 
-  // State to trigger calculation manually
-  const [triggerCalculation, setTriggerCalculation] = useState(0);
+  // State to trigger calculation automatically (removed manual trigger)
+  // const [triggerCalculation, setTriggerCalculation] = useState(0);
 
   // Animation states
   const [animationSteps, setAnimationSteps] = useState([]);
@@ -116,7 +116,7 @@ function NewtonRaphsonComponent() {
     } catch (e) {
       setError(e.message);
     }
-  }, [triggerCalculation, funcString, fpString, x0Value, tolerance, maxIterations, myFunction, myDerivativeFunction]);
+  }, [funcString, fpString, x0Value, tolerance, maxIterations, myFunction, myDerivativeFunction]); // Now depends directly on inputs
 
   // --- Animation Control and Navigations ---
   useEffect(() => {
@@ -152,10 +152,6 @@ function NewtonRaphsonComponent() {
   const handleNextStep = () => {
     setIsPlaying(false);
     setCurrentStepIndex(prev => Math.min(animationSteps.length - 1, prev + 1));
-  };
-
-  const handleCalculate = () => { // NEW: Calculate button handler
-    setTriggerCalculation(prev => prev + 1);
   };
 
   // --- Plot Data Generation for Current Frame ---
@@ -226,8 +222,8 @@ function NewtonRaphsonComponent() {
 
   return (
     <div style={{ padding: '10px', margin: '20px 0' }}> {/* Removed border */}
-      <h3 style={{ fontSize: '2em' }}>Newton-Raphson Method</h3>
-      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: '40px' }}> {/* Added gap */}
+      {/* Removed h3 title */}
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '40px' }}> {/* Removed justifyContent: 'space-between' */}
         <div style={{ width: '25%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
           {/* Description moved here */}
           <p style={{ marginBottom: '20px' }}>The Newton-Raphson method is an iterative root-finding algorithm that uses the tangent line to approximate the function. Starting with an initial guess and its derivative, it calculates the tangent to the function at that point and finds where the tangent intersects the x-axis. This intersection point becomes the next, improved guess for the root.</p>

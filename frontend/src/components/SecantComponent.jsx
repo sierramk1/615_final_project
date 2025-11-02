@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { secant } from '../js/secant.js'; // Now a generator
-import * as math from 'mathjs';
+import * as math from 'mathjs'; // FIXED: Corrected import syntax
 import Plot from 'react-plotly.js';
 
 function SecantComponent() {
@@ -11,8 +11,8 @@ function SecantComponent() {
   const [tolerance, setTolerance] = useState('1e-6');
   const [maxIterations, setMaxIterations] = useState('100');
 
-  // State to trigger calculation manually
-  const [triggerCalculation, setTriggerCalculation] = useState(0);
+  // State to trigger calculation automatically (removed manual trigger)
+  // const [triggerCalculation, setTriggerCalculation] = useState(0);
 
   // Animation states
   const [animationSteps, setAnimationSteps] = useState([]);
@@ -107,7 +107,7 @@ function SecantComponent() {
     } catch (e) {
       setError(e.message);
     }
-  }, [triggerCalculation, funcString, x0Value, x1Value, tolerance, maxIterations, myFunction]);
+  }, [funcString, x0Value, x1Value, tolerance, maxIterations, myFunction]); // Now depends directly on inputs
 
   // --- Animation Control and Navigations ---
   useEffect(() => {
@@ -143,10 +143,6 @@ function SecantComponent() {
   const handleNextStep = () => {
     setIsPlaying(false);
     setCurrentStepIndex(prev => Math.min(animationSteps.length - 1, prev + 1));
-  };
-
-  const handleCalculate = () => { // NEW: Calculate button handler
-    setTriggerCalculation(prev => prev + 1);
   };
 
   // --- Plot Data Generation for Current Frame ---
@@ -208,7 +204,7 @@ function SecantComponent() {
       y: [0],
       mode: 'markers',
       marker: { color: 'purple', size: 10, symbol: 'circle' },
-      name: 'Next Guess (x2)'
+      name: 'Next Guess (x_n+1)'
     });
 
     setPlotData(newPlotData);
@@ -217,8 +213,8 @@ function SecantComponent() {
 
   return (
     <div style={{ padding: '10px', margin: '20px 0' }}> {/* Removed border */}
-      <h3 style={{ fontSize: '2em' }}>Secant Method</h3>
-      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: '40px' }}> {/* Added gap */}
+      {/* Removed h3 title */}
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '40px' }}> {/* Removed justifyContent: 'space-between' */}
         <div style={{ width: '25%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
           {/* Description moved here */}
           <p style={{ marginBottom: '20px' }}>The Secant method is a root-finding algorithm that uses a succession of roots of secant lines to better approximate a root of a function. It is similar to Newton's method but avoids the need for an analytical derivative by approximating it with a finite difference.</p>
@@ -294,7 +290,7 @@ function SecantComponent() {
               <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {`# Pseudocode for the Secant Method
 
-This algorithm is a root-finding method that uses a succession of roots of secant lines to better approximate a root of a function. It is similar to Newton's method but avoids the need for an analytical derivative.
+This algorithm is a root-finding method that uses a succession of roots of secant lines to better approximate a root of a function. It is similar to Newton's method but avoids the need for an analytical derivative by approximating it with a finite difference.
 
 **FUNCTION** Secant(f, x0, x1, tol, max_iter)
 

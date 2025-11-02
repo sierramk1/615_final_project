@@ -21,27 +21,34 @@ function HomePage() {
           Understand how these methods iteratively approach a solution by adjusting parameters and observing their dynamic behavior.
         </p>
         
-        <div style={{ marginTop: '30px' }}>
+        <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'row', gap: '15px', justifyContent: 'center' }}> {/* Added justifyContent: 'center' */}
           <Link to="/algorithms" style={{
-            padding: '10px 20px',
-            fontSize: '1.1em',
-            backgroundColor: '#72A8C8', // New button color
+            width: '195px', // Fixed width
+            height: '45px', // Fixed height
+            display: 'flex', // Use flex to center text
+            justifyContent: 'center', // Center text horizontally
+            alignItems: 'center', // Center text vertically
+            fontSize: '1.3em', 
+            backgroundColor: '#3C667E',
             color: 'white',
             textDecoration: 'none',
-            borderRadius: '5px',
-            marginRight: '15px',
+            borderRadius: '50px', // Fully rounded
             cursor: 'pointer'
-          }}>Learn Algorithms</Link> {/* Changed text */}
+          }}>Explore</Link>
           
           <button style={{
-            padding: '10px 20px',
-            fontSize: '1.1em',
-            backgroundColor: '#72A8C8', // New button color
+            width: '195px', // Fixed width
+            height: '45px', // Fixed height
+            display: 'flex', // Use flex to center text
+            justifyContent: 'center', // Center text horizontally
+            alignItems: 'center', // Center text vertically
+            fontSize: '1.3em',
+            backgroundColor: '#72A8C8',
             color: 'white',
             border: 'none',
-            borderRadius: '5px',
+            borderRadius: '50px', // Fully rounded
             cursor: 'pointer'
-          }}>Compare Algorithms</button>
+          }}>Compare</button>
         </div>
       </div>
       

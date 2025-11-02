@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { goldenSearch } from '../js/golden_search.js'; // Now a generator
-import * as math from 'mathjs';
+import * as math from 'mathjs'; // FIXED: Corrected import syntax
 import Plot from 'react-plotly.js';
 
 function GoldenSearchComponent() {
@@ -252,8 +252,8 @@ function GoldenSearchComponent() {
 
   return (
     <div style={{ padding: '10px', margin: '20px 0' }}> {/* Removed border */}
-      <h3 style={{ fontSize: '2em' }}>Golden Search</h3>
-      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: '40px' }}> {/* Added gap */}
+      {/* Removed h3 title */}
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '40px' }}> {/* Removed justifyContent: 'space-between' */}
         <div style={{ width: '25%', paddingRight: '10px' }}> {/* Left side: Inputs and Controls */}
           {/* Description moved here */}
           <p style={{ marginBottom: '20px' }}>The Golden Section Search is a technique for finding the extremum (minimum or maximum) of a strictly unimodal function by successively narrowing the range of values inside which the extremum is known to exist. It uses the golden ratio (approximately 1.618) to determine the placement of test points, ensuring the interval shrinks by a constant factor at each step.</p>

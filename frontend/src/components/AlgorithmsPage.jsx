@@ -1,69 +1,96 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import BisectionComponent from './BisectionComponent.jsx';
-import GoldenSearchComponent from './GoldenSearchComponent.jsx';
-import NewtonRaphsonComponent from './NewtonRaphsonComponent.jsx';
-import SecantComponent from './SecantComponent.jsx';
+import OneDAlgorithmViewer from './OneDAlgorithmViewer.jsx'; // New component
 import GradientDescentComponent from './GradientDescentComponent.jsx';
 import NewtonsMethodComponent from './NewtonsMethodComponent.jsx';
 
 function AlgorithmsPage() {
+  const [showOneDSection, setShowOneDSection] = useState(true); // State to toggle between 1D and Multi-D sections
+
   return (
     <div style={{
-      padding: '20px',
-      backgroundColor: '#FFF4E6', // New background color, matching homepage
-      fontFamily: 'Roboto, Arial, sans-serif' // New font family
+      padding: '0px', 
+      backgroundColor: '#F4F2EF', // Main content area background color
+      fontFamily: 'Roboto, Arial, sans-serif' 
     }}>
-      {/* --- NEW TOP HEADER AND NAVIGATION --- */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ccc', paddingBottom: '15px', marginBottom: '30px' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <h1 style={{ fontSize: '3em', margin: 0, marginRight: '15px' }}>Optimization Algorithms</h1>
-          <img src="/character.png" alt="Owl Character" style={{ maxWidth: '70px', height: 'auto' }} />
-        </div>
+      {/* --- TOP HEADER AND NAVIGATION --- */}
+      <div style={{
+        width: '100%', 
+        height: '77px',
+        backgroundColor: '#FFF5E6', // Header background color
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '0 20px', 
+        boxSizing: 'border-box', 
+        borderBottom: '1px solid #ccc'
+      }}>
+        {/* OptiLearn as a Link to Home */}
         <Link to="/" style={{
-          padding: '10px 20px',
-          fontSize: '1.0em',
-          backgroundColor: '#72A8C8',
-          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          color: '#72A8C8', 
+          fontFamily: 'Roboto',
+          fontWeight: '700',
+          fontSize: '38px',
+          lineHeight: '100%',
+          letterSpacing: '0%',
+          textAlign: 'center',
           textDecoration: 'none',
-          borderRadius: '5px',
           cursor: 'pointer'
-        }}>Back to Home</Link>
+        }}>
+          <img src="/character.png" alt="Owl Character" style={{ maxWidth: '50px', height: 'auto', marginRight: '10px' }} />
+          OptiLearn
+        </Link>
+
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          {/* One-Dimensional / Multi-Dimensional buttons in Header */}
+          <button 
+            onClick={() => setShowOneDSection(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: showOneDSection ? '#3C667E' : '#666',
+              fontSize: '1.2em',
+              cursor: 'pointer',
+              fontWeight: showOneDSection ? 'bold' : 'normal',
+              textDecoration: showOneDSection ? 'underline' : 'none'
+            }}
+          >One-Dimensional</button>
+          <button 
+            onClick={() => setShowOneDSection(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: !showOneDSection ? '#3C667E' : '#666',
+              fontSize: '1.2em',
+              cursor: 'pointer',
+              fontWeight: !showOneDSection ? 'bold' : 'normal',
+              textDecoration: !showOneDSection ? 'underline' : 'none'
+            }}
+          >Multi-Dimensional</button>
+        </div>
       </div>
 
-      <div style={{ margin: '0 0 40px 0', display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-        <a href="#bisection-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Bisection</a>
-        <a href="#golden-search-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Golden Search</a>
-        <a href="#newton-raphson-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Newton-Raphson</a>
-        <a href="#secant-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Secant</a>
-        <a href="#gradient-descent-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Gradient Descent</a>
-        <a href="#newtons-method-component" style={{ padding: '8px 15px', backgroundColor: '#72A8C8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>Newton's Method</a>
-      </div>
-      {/* --- END NEW TOP HEADER AND NAVIGATION --- */}
-
-      {/* --- One-Dimensional Algorithms --- */}
-      <h2 style={{ marginTop: '40px', paddingBottom: '10px', fontSize: '2.5em' }}>One-Dimensional Algorithms</h2> 
-      <div id="bisection-component"> 
-        <BisectionComponent />
-      </div>
-      <div id="golden-search-component"> 
-        <GoldenSearchComponent />
-      </div>
-      <div id="newton-raphson-component"> 
-        <NewtonRaphsonComponent />
-      </div>
-      <div id="secant-component"> 
-        <SecantComponent />
-      </div>
-
-      {/* --- Multi-Dimensional Algorithms --- */}
-      <h2 style={{ marginTop: '40px', paddingBottom: '10px', fontSize: '2.5em' }}>Multi-Dimensional Algorithms</h2> 
-      <div id="gradient-descent-component"> 
-        <GradientDescentComponent />
-      
-      </div>
-      <div id="newtons-method-component"> 
-        <NewtonsMethodComponent />
+      {/* --- Algorithm Content --- */}
+      <div style={{ padding: '20px' }}> 
+        {showOneDSection ? (
+          <>
+            {/* Render the new OneDAlgorithmViewer component */}
+            <OneDAlgorithmViewer />
+          </>
+        ) : (
+          <>
+            {/* Multi-Dimensional Algorithms */}
+            <h2 style={{ marginTop: '20px', paddingBottom: '10px', fontSize: '2.5em' }}>Multi-Dimensional Algorithms</h2> 
+            <div id="gradient-descent-component"> 
+              <GradientDescentComponent />
+            </div>
+            <div id="newtons-method-component"> 
+              <NewtonsMethodComponent />
+            </div>
+          </>
+        )}
       </div>
 
     </div>
