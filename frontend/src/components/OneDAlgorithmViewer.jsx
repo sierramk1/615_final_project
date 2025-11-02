@@ -45,4 +45,18 @@ function OneDAlgorithmViewer() {
           borderBottom: '3px solid #1E1E1E',
           borderRight: '3px solid #1E1E1E',
           transform: 'rotate(45deg)', 
-          mar
+          marginLeft: '8px', // ✅ this was missing
+          }}
+        />
+      </div>
+
+      {/* Render the selected algorithm component */}
+      {selectedAlgo === 'bisection' && <BisectionComponent />}
+      {selectedAlgo === 'goldenSearch' && <GoldenSearchComponent />}
+      {selectedAlgo === 'newtonRaphson' && <NewtonRaphsonComponent />}
+      {selectedAlgo === 'secant' && <SecantComponent />}
+    </div>
+  );
+}
+
+export default OneDAlgorithmViewer;
