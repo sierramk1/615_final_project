@@ -1,0 +1,20 @@
+# OptiLearn
+Gen-AI assisted project visualizing optimization algorithms.
+
+Optimization algorithms are central to modern computer science, engineering, and statistics, providing powerful frameworks for solving complex problems and analyzing large-scale data (Chaudhary et al., 2024). As datasets and models continue to grow in size, these methods have become increasingly necessary for efficient computation, allowing statisticians and engineers to process data without overwhelming computational resources (Lange et al., 2014). Despite their importance, optimization algorithms can be complex and conceptually challenging to understand, particularly in higher dimensions. One-dimensional algorithms can often be demonstrated using static images, but multi-dimensional optimization algorithms operate in non-linear spaces that can be difficult to comprehend. Although some sources provide animations, most lack interactivity, limiting the user in their learning process. 
+
+To address this gap, I propose to develop OptiLearn, an interactive visualization tool for six optimization algorithms: Bisection, Secant, Newton-Raphson, Golden Search, Gradient Descent and Newton’s Method. My goal is to provide an educational resource that allows users to learn about these algorithms by exploring convergence behavior, adjusting algorithm parameters, and comparing the efficiency and accuracy of different methods. Users will not only be able to observe the algorithmic behavior, but also interact with it, fostering a deeper understanding of the foundations of optimization algorithms.
+
+A key aspect of this project is the integration of generative AI into the development process. I plan to incorporate it into a vibe-coding workflow, using it to generate and debug code, and suggest UI layouts to support the interactivity of the visualization tool. It will also assist in leveraging additional software tools, such as building the application in JavaScript, and creating dynamic, interactive visualizations using Plotly, D3.js, and ipywidgets. By combining mathematical explanations, interactive visualizations, and generative AI tools, this project will produce an engaging, educational resource for learning optimization algorithms. As a rapidly advancing area of statistics, optimization holds great potential to make processes faster, more scalable, and more efficient, and I want to provide a resource for people to experiment with algorithms, explore convergence behavior, and deepen their understanding. 
+
+To follow the project for reproduction, you can download the files and run the application locally. The repository includes all necessary code, dependencies, and instructions to set up the environment. Users can interact with each optimization algorithm, adjust parameters, and visualize convergence behavior in real time. Detailed documentation and comments are provided to explain the implementation, as well as how generative AI was leveraged in the development process.
+
+```text
+OptiLearn/
+├── algorithms/ # Python implementations of the optimization algorithms
+├── notebooks/ # Jupyter notebooks for testing and demonstrating algorithms
+├── visualizations/ # Saved plots and interactive visualization outputs
+├── frontend/ # JavaScript/HTML files for interactive UI
+├── documentation/ # Development logs, screenshots, tutorial materials
+└── README.md # Project description and instructions
+```
