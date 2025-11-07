@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { goldenSearch } from "../../js/golden_search.js";
-import * as math from "mathjs";
-import { TextField, Alert, Typography, Box, Grid } from "@mui/material";
-import GraphWithControls from "../common/GraphWithControls.jsx";
 
-function GoldenSearchComponent() {
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { TextField, Button, Alert, Typography, Box, Grid } from "@mui/material";
+import GraphWithControls from "../common/GraphWithControls.jsx";
+import Spline from 'cubic-spline';
+import * as math from 'mathjs';
+
+function GoldenSearchComponent({ optimizationType, data }) {
   // Input states
   const [funcString, setFuncString] = useState("(x-2)^2");
   const [aValue, setAValue] = useState("-1");
-  const [cValue, setCValue] = useState("5");
+  const [bValue, setBValue] = useState("5");
   const [tolerance, setTolerance] = useState("1e-6");
   const [maxIterations, setMaxIterations] = useState("100");
 
@@ -19,7 +20,7 @@ function GoldenSearchComponent() {
   const intervalRef = useRef(null);
 
   // Output states
-  const [currentMin, setCurrentMin] = useState(null);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [errorFields, setErrorFields] = useState({});
   const [plotData, setPlotData] = useState([]);
@@ -31,25 +32,10 @@ function GoldenSearchComponent() {
   // Toggle state for graph/description
   const [showGraph, setShowGraph] = useState(true);
 
-  // Memoized function from user input
-  const myFunction = useCallback(
-    (x) => {
-      try {
-        return math.evaluate(funcString, { x: x });
-      } catch (err) {
-        console.warn("Invalid expression:", funcString, err.message);
-        return NaN;
-      }
-    },
-    [funcString]
-  );
-
-  // --- Algorithm Execution and Step Generation ---
-  useEffect(() => {
-    // Reset states
+  const handleOptimize = async () => {
     setError(null);
     setErrorFields({});
-    setCurrentMin(null);
+    setResult(null);
     setAnimationSteps([]);
     setCurrentStepIndex(0);
     setIsPlaying(false);
@@ -57,100 +43,70 @@ function GoldenSearchComponent() {
       clearInterval(intervalRef.current);
     }
 
-    // Parse inputs
     const a = parseFloat(aValue);
-    const c = parseFloat(cValue);
+    const b = parseFloat(bValue);
     const tol = parseFloat(tolerance);
     const maxIter = parseInt(maxIterations);
 
-    // Validate inputs
-    const fields = {};
-    let hasError = false;
+    const payload = {
+      optimizationType,
+      initialGuess: { a, b },
+      tolerance: tol,
+      maxIterations: maxIter,
+    };
 
-    if (isNaN(a)) {
-      fields.a = true;
-      hasError = true;
-    }
-    if (isNaN(c)) {
-      fields.c = true;
-      hasError = true;
-    }
-    if (isNaN(tol)) {
-      fields.tolerance = true;
-      hasError = true;
-    }
-    if (isNaN(maxIter)) {
-      fields.maxIterations = true;
-      hasError = true;
-    }
-
-    if (hasError) {
-      setError("Please enter valid numbers for all inputs.");
-      setErrorFields(fields);
-      return;
-    }
-
-    if (a >= c) {
-      setError("'a' must be less than 'c'.");
-      setErrorFields({ a: true, c: true });
-      return;
+    if (optimizationType === 'function') {
+      payload.expression = funcString;
+    } else if (optimizationType === 'data') {
+      if (!data) {
+        setError("Please upload a data file.");
+        return;
+      }
+      payload.data = data;
     }
 
     try {
-      const f_a = myFunction(a);
-      const f_c = myFunction(c);
+      const response = await fetch('http://localhost:3001/api/optimize/golden-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-      if (isNaN(f_a) || isNaN(f_c)) {
-        setError(
-          "Function evaluation failed for initial interval. Check your function string or interval."
-        );
-        setErrorFields({ funcString: true });
-        return;
-      }
+      const resData = await response.json();
 
-      // Collect all steps from the generator
-      const steps = Array.from(goldenSearch(myFunction, a, c, tol, maxIter));
-      setAnimationSteps(steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(false);
-
-      if (steps.length > 0) {
-        const lastStep = steps[steps.length - 1];
-        setCurrentMin(
-          myFunction(lastStep.b) < myFunction(lastStep.d)
-            ? lastStep.b
-            : lastStep.d
-        );
-      }
-
-      // --- Calculate STATIC Plot Bounds ONCE for the initial interval ---
-      const initialPlotRangeStart = Math.min(a, c) - Math.abs(c - a) * 0.5;
-      const initialPlotRangeEnd = Math.max(a, c) + Math.abs(c - a) * 0.5;
-
-      const numPoints = 200;
-      const x_temp_plot = Array.from(
-        { length: numPoints },
-        (_, i) =>
-          initialPlotRangeStart +
-          (i * (initialPlotRangeEnd - initialPlotRangeStart)) / (numPoints - 1)
-      );
-      const y_temp_plot = x_temp_plot.map((x) => myFunction(x));
-
-      const finiteYValues = y_temp_plot.filter((y) => isFinite(y));
-      if (finiteYValues.length === 0) {
-        setStaticYBounds([-1, 1]);
+      if (!response.ok) {
+        setError(resData.error || 'An error occurred.');
       } else {
-        const yMin = Math.min(...finiteYValues);
-        const yMax = Math.max(...finiteYValues);
-        const yAxisPadding = (yMax - yMin) * 0.1 || 0.1;
-        setStaticYBounds([yMin - yAxisPadding, yMax + yAxisPadding]);
+        setAnimationSteps(resData.steps);
+        const lastStep = resData.steps[resData.steps.length - 1];
+        const finalResult = myFunction(lastStep.b) < myFunction(lastStep.d) ? lastStep.b : lastStep.d;
+        setResult(finalResult);
       }
-      setStaticXBounds([initialPlotRangeStart, initialPlotRangeEnd]);
-    } catch (e) {
-      setError(e.message);
-      setErrorFields({ funcString: true });
+    } catch (err) {
+      setError('Failed to connect to the server.');
     }
-  }, [funcString, aValue, cValue, tolerance, maxIterations, myFunction]);
+  };
+
+  const myFunction = useCallback(
+    (x) => {
+        if (optimizationType === 'function') {
+            try {
+                return math.evaluate(funcString, { x: x });
+            } catch (err) {
+                return NaN;
+            }
+        } else if (optimizationType === 'data' && data) {
+            const xs = data.map(p => p.x);
+            const ys = data.map(p => p.y);
+            const spline = new Spline(xs, ys);
+            return spline.at(x);
+        }
+        return NaN;
+    },
+    [funcString, optimizationType, data]
+  );
 
   // --- Animation Control and Navigations ---
   useEffect(() => {
@@ -194,120 +150,128 @@ function GoldenSearchComponent() {
     );
   };
 
-  // --- Plot Data Generation for Current Frame ---
   useEffect(() => {
-    if (
-      animationSteps.length === 0 ||
-      error ||
-      staticXBounds[0] === staticXBounds[1]
-    ) {
-      setPlotData([]);
-      return;
+    const a = parseFloat(aValue);
+    const b = parseFloat(bValue);
+
+    if (isNaN(a) || isNaN(b) || a >= b) {
+        setPlotData([]);
+        return;
     }
 
-    const currentStep = animationSteps[currentStepIndex];
-    const { a, b, d, c } = currentStep;
+    const initialPlotRangeStart = Math.min(a, b) - Math.abs(b - a) * 0.5;
+    const initialPlotRangeEnd = Math.max(a, b) + Math.abs(b - a) * 0.5;
 
     const numPoints = 200;
-    const x_plot_for_func = Array.from(
+    const x_temp_plot = Array.from(
       { length: numPoints },
       (_, i) =>
-        staticXBounds[0] +
-        (i * (staticXBounds[1] - staticXBounds[0])) / (numPoints - 1)
+        initialPlotRangeStart +
+        (i * (initialPlotRangeEnd - initialPlotRangeStart)) / (numPoints - 1)
     );
-    const y_plot_for_func = x_plot_for_func.map((x) => myFunction(x));
+    const y_temp_plot = x_temp_plot.map((x) => myFunction(x));
+
+    const finiteYValues = y_temp_plot.filter((y) => isFinite(y));
+    if (finiteYValues.length === 0) {
+      setStaticYBounds([-1, 1]);
+    } else {
+      const yMin = Math.min(...finiteYValues);
+      const yMax = Math.max(...finiteYValues);
+      const yAxisPadding = (yMax - yMin) * 0.1 || 0.1;
+      setStaticYBounds([yMin - yAxisPadding, yMax + yAxisPadding]);
+    }
+    setStaticXBounds([initialPlotRangeStart, initialPlotRangeEnd]);
 
     const newPlotData = [
-      {
-        x: x_plot_for_func,
-        y: y_plot_for_func,
-        type: "scatter",
-        mode: "lines",
-        name: "f(x)",
-        line: { color: "lightblue", width: 1 },
-      },
-      {
-        x: x_plot_for_func.filter((x_val) => x_val >= a && x_val <= c),
-        y: x_plot_for_func
-          .filter((x_val) => x_val >= a && x_val <= c)
-          .map((x_val) => myFunction(x_val)),
-        type: "scatter",
-        mode: "lines",
-        name: "f(x) in [a,c]",
-        line: { color: "blue", width: 3 },
-      },
-      {
-        x: [a, a],
-        y: staticYBounds,
-        mode: "lines",
-        line: { color: "red", dash: "dash" },
-        name: "Current A",
-      },
-      {
-        x: [c, c],
-        y: staticYBounds,
-        mode: "lines",
-        line: { color: "red", dash: "dash" },
-        name: "Current C",
-      },
-    ];
+        {
+          x: x_temp_plot,
+          y: y_temp_plot,
+          type: "scatter",
+          mode: "lines",
+          name: optimizationType === 'function' ? `f(x) = ${funcString}` : 'Interpolated Function',
+        },
+      ];
 
-    // Determine which segment is kept/discarded for the *next* step
-    if (currentStepIndex + 1 < animationSteps.length) {
-      const nextStep = animationSteps[currentStepIndex + 1];
-      const a_next = nextStep.a;
-      const c_next = nextStep.c;
+      if (animationSteps.length > 0) {
+        const currentStep = animationSteps[currentStepIndex];
+        const { a: currentA, b: currentB, c: currentC, d: currentD } = currentStep;
 
-      if (a_next === a) {
+        // Kept and Discarded Intervals
+        const keptInterval = (myFunction(currentB) < myFunction(currentD)) ? [currentA, currentD] : [currentB, currentC];
+        const discardedInterval = (myFunction(currentB) < myFunction(currentD)) ? [currentD, currentC] : [currentA, currentB];
+
         newPlotData.push({
-          x: [a, c_next],
-          y: [staticYBounds[0], staticYBounds[0]],
+          x: [discardedInterval[0], discardedInterval[1], discardedInterval[1], discardedInterval[0], discardedInterval[0]],
+          y: [staticYBounds[0], staticYBounds[0], staticYBounds[1], staticYBounds[1], staticYBounds[0]],
+          type: 'scatter',
+          fill: 'toself',
+          fillcolor: 'rgba(255, 0, 0, 0.2)',
+          line: { color: 'transparent' },
+          name: 'Discarded Interval',
+        });
+
+        newPlotData.push({
+          x: [keptInterval[0], keptInterval[1], keptInterval[1], keptInterval[0], keptInterval[0]],
+          y: [staticYBounds[0], staticYBounds[0], staticYBounds[1], staticYBounds[1], staticYBounds[0]],
+          type: 'scatter',
+          fill: 'toself',
+          fillcolor: 'rgba(0, 255, 0, 0.2)',
+          line: { color: 'transparent' },
+          name: 'Kept Interval',
+        });
+
+        // Active segment
+        const x_active_segment = x_temp_plot.filter(
+          (x_val) => x_val >= currentA && x_val <= currentC
+        );
+        const y_active_segment = x_active_segment.map((x_val) => myFunction(x_val));
+
+        newPlotData.push({
+          x: x_active_segment,
+          y: y_active_segment,
+          type: "scatter",
           mode: "lines",
-          line: { color: "green", width: 5, opacity: 0.6 },
-          name: "Kept Segment",
+          name: "f(x) in [a,c]",
+          line: { color: "blue", width: 3 },
+        });
+
+        // Current A and C lines
+        newPlotData.push({
+          x: [currentA, currentA],
+          y: staticYBounds,
+          mode: "lines",
+          line: { color: "red", dash: "dash" },
+          name: "Current A",
         });
         newPlotData.push({
-          x: [c_next, c],
-          y: [staticYBounds[0], staticYBounds[0]],
+          x: [currentC, currentC],
+          y: staticYBounds,
           mode: "lines",
-          line: { color: "red", width: 5, opacity: 0.6 },
-          name: "Discarded Segment",
+          line: { color: "red", dash: "dash" },
+          name: "Current C",
         });
-      } else {
+
+        // Inner points
         newPlotData.push({
-          x: [a_next, c],
-          y: [staticYBounds[0], staticYBounds[0]],
-          mode: "lines",
-          line: { color: "green", width: 5, opacity: 0.6 },
-          name: "Kept Segment",
+          x: [currentB, currentD],
+          y: [myFunction(currentB), myFunction(currentD)],
+          mode: "markers",
+          marker: { color: "blue", size: 10, symbol: "circle" },
+          name: "Inner Points",
         });
+
+        // Y=0 line
         newPlotData.push({
-          x: [a, a_next],
-          y: [staticYBounds[0], staticYBounds[0]],
+          x: staticXBounds,
+          y: [0, 0],
           mode: "lines",
-          line: { color: "red", width: 5, opacity: 0.6 },
-          name: "Discarded Segment",
+          line: { color: "gray", dash: "dot" },
+          name: "y=0",
         });
       }
-    }
+      setPlotData(newPlotData);
 
-    newPlotData.push({
-      x: [b, d],
-      y: [myFunction(b), myFunction(d)],
-      mode: "markers",
-      marker: { color: "blue", size: 10, symbol: "circle" },
-      name: "Inner Points",
-    });
-
-    setPlotData(newPlotData);
-  }, [
-    currentStepIndex,
-    animationSteps,
-    error,
-    myFunction,
-    staticXBounds,
-    staticYBounds,
-  ]);
+  }, [funcString, aValue, bValue, optimizationType, data, myFunction, result, animationSteps, currentStepIndex]);
 
   return (
     <div
@@ -340,44 +304,53 @@ function GoldenSearchComponent() {
             gap: 2,
           }}
         >
-          {/* Description */}
           <Typography
             variant="body2"
             sx={{ fontSize: "1em", lineHeight: 1.75, marginBottom: 1 }}
           >
-            The Golden Section Search is a technique for finding the extremum
-            (minimum or maximum) of a strictly unimodal function by
-            successively narrowing the range of values inside which the extremum
-            is known to exist. It uses the golden ratio (approximately 1.618)
-            to determine the placement of test points, ensuring the interval
-            shrinks by a constant factor at each step.
+            The Golden Section Search is a technique for finding the extremum (minimum or maximum) of a strictly unimodal function.
           </Typography>
 
-          {/* Input fields */}
           <Grid container spacing={2} sx={{ width: "100%" }}>
-            <Grid item xs={12}>
-              <TextField
-                label="Function f(x)"
-                value={funcString}
-                onChange={(e) => setFuncString(e.target.value)}
-                error={errorFields.funcString}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Max Iterations"
-                type="number"
-                value={maxIterations}
-                onChange={(e) => setMaxIterations(e.target.value)}
-                error={errorFields.maxIterations}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
+            {optimizationType === 'function' && (
+                <>
+                <Grid item xs={12}>
+                <TextField
+                    label="Function f(x)"
+                    value={funcString}
+                    onChange={(e) => setFuncString(e.target.value)}
+                    error={errorFields.funcString}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Tolerance"
+                    type="number"
+                    value={tolerance}
+                    onChange={(e) => setTolerance(e.target.value)}
+                    error={errorFields.tolerance}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Max Iterations"
+                    type="number"
+                    value={maxIterations}
+                    onChange={(e) => setMaxIterations(e.target.value)}
+                    error={errorFields.maxIterations}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                </>
+            )}
             <Grid item xs={6}>
               <TextField
                 label="Interval a"
@@ -392,23 +365,11 @@ function GoldenSearchComponent() {
             </Grid>
             <Grid item xs={6}>
               <TextField
-                label="Interval c"
+                label="Interval b"
                 type="number"
-                value={cValue}
-                onChange={(e) => setCValue(e.target.value)}
-                error={errorFields.c}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Tolerance"
-                type="number"
-                value={tolerance}
-                onChange={(e) => setTolerance(e.target.value)}
-                error={errorFields.tolerance}
+                value={bValue}
+                onChange={(e) => setBValue(e.target.value)}
+                error={errorFields.b}
                 variant="outlined"
                 size="small"
                 fullWidth
@@ -416,31 +377,23 @@ function GoldenSearchComponent() {
             </Grid>
           </Grid>
 
-          {/* Iteration & Root Display */}
-          {!error && currentMin !== null && (
+          <Button onClick={handleOptimize} variant="contained" sx={{ backgroundColor: '#72A8C8', '&:hover': { backgroundColor: '#5a8fa8' } }}>Optimize</Button>
+
+          {result !== null && (
             <Typography
               variant="body2"
               sx={{ marginTop: 1, fontSize: "1.2em" }}
             >
               <strong>Final Minimum:</strong>{" "}
-              <strong>{currentMin.toFixed(6)}</strong>
+              <strong>{result.toFixed(6)}</strong>
             </Typography>
           )}
-          {!error && currentMin === null && animationSteps.length === 0 && (
-            <Typography
-              variant="body2"
-              sx={{ marginTop: 1, fontSize: "1.2em", color: "text.secondary" }}
-            >
-              Enter function and interval to calculate minimum...
-            </Typography>
-          )}
-          {animationSteps.length > 0 && !error && (
-            <Typography variant="body2" sx={{ fontSize: "1.2em" }}>
+          {animationSteps.length > 0 && (
+            <Typography variant="body2" sx={{ marginTop: 1, fontSize: "1.2em" }}>
               Iteration: {currentStepIndex + 1} / {animationSteps.length}
             </Typography>
           )}
 
-          {/* Error Alert - at the bottom */}
           {error && (
             <Alert
               severity="warning"
@@ -465,7 +418,7 @@ function GoldenSearchComponent() {
               width: "100%",
               height: "100%",
               title: {
-                text: `Plot of f(x) = ${funcString}`,
+                text: optimizationType === 'function' ? `Plot of f(x) = ${funcString}`: 'Plot of Interpolated Function',
                 font: { size: 14 },
               },
               xaxis: {
@@ -483,21 +436,20 @@ function GoldenSearchComponent() {
             config={{ responsive: true }}
             showGraph={showGraph}
             onToggleGraph={() => setShowGraph(!showGraph)}
+            animationSteps={animationSteps}
+            currentStepIndex={currentStepIndex}
             isPlaying={isPlaying}
             onPlayPause={handlePlayPause}
             onPrevStep={handlePrevStep}
             onNextStep={handleNextStep}
             onReset={handleReset}
-            animationSteps={animationSteps}
-            currentStepIndex={currentStepIndex}
-            error={error}
             pseudocodeContent={
-              <>
-                <h4>Golden Section Search Pseudocode</h4>
-                <pre
-                  style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                >
-                  {`# Pseudocode for the Golden Section Search Method
+                <>
+                  <h4>Golden Section Search Pseudocode</h4>
+                  <pre
+                    style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                  >
+                    {`# Pseudocode for the Golden Section Search Method
 
 This algorithm finds the extremum (minimum or maximum) of a strictly unimodal function by successively narrowing the range of values inside which the extremum is known to exist. It uses the golden ratio (approximately 1.618) to determine the placement of test points, ensuring the interval shrinks by a constant factor at each step.
 
@@ -544,9 +496,9 @@ This algorithm finds the extremum (minimum or maximum) of a strictly unimodal fu
   RETURN (a + c) / 2 // Return the midpoint of the last interval
 
 **END FUNCTION**`}
-                </pre>
-              </>
-            }
+                  </pre>
+                </>
+              }
           />
         </div>
       </div>

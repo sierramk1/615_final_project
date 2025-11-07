@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { newtonRaphson } from "../../js/newton_raphson.js";
-import * as math from "mathjs";
-import { TextField, Alert, Typography, Box, Grid } from "@mui/material";
-import GraphWithControls from "../common/GraphWithControls.jsx";
 
-function NewtonRaphsonComponent() {
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { TextField, Button, Alert, Typography, Box, Grid } from "@mui/material";
+import GraphWithControls from "../common/GraphWithControls.jsx";
+import Spline from 'cubic-spline';
+import * as math from 'mathjs';
+
+function NewtonRaphsonComponent({ optimizationType, data }) {
   // Input states
   const [funcString, setFuncString] = useState("x^3 - x - 2");
-  const [fpString, setFpString] = useState("3*x^2 - 1");
   const [x0Value, setX0Value] = useState("1.0");
   const [tolerance, setTolerance] = useState("1e-6");
   const [maxIterations, setMaxIterations] = useState("100");
@@ -19,7 +19,7 @@ function NewtonRaphsonComponent() {
   const intervalRef = useRef(null);
 
   // Output states
-  const [currentRoot, setCurrentRoot] = useState(null);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [errorFields, setErrorFields] = useState({});
   const [plotData, setPlotData] = useState([]);
@@ -31,38 +31,10 @@ function NewtonRaphsonComponent() {
   // Toggle state for graph/description
   const [showGraph, setShowGraph] = useState(true);
 
-  // Memoized function from user input
-  const myFunction = useCallback(
-    (x) => {
-      try {
-        return math.evaluate(funcString, { x: x });
-      } catch (err) {
-        console.warn("Invalid expression:", funcString, err.message);
-        return NaN;
-      }
-    },
-    [funcString]
-  );
-
-  // Memoized derivative function from user input
-  const myDerivativeFunction = useCallback(
-    (x) => {
-      try {
-        return math.evaluate(fpString, { x: x });
-      } catch (err) {
-        console.warn("Invalid derivative expression:", fpString, err.message);
-        return NaN;
-      }
-    },
-    [fpString]
-  );
-
-  // --- Algorithm Execution and Step Generation ---
-  useEffect(() => {
-    // Reset states
+  const handleOptimize = async () => {
     setError(null);
     setErrorFields({});
-    setCurrentRoot(null);
+    setResult(null);
     setAnimationSteps([]);
     setCurrentStepIndex(0);
     setIsPlaying(false);
@@ -70,94 +42,67 @@ function NewtonRaphsonComponent() {
       clearInterval(intervalRef.current);
     }
 
-    // Parse inputs
     const x0 = parseFloat(x0Value);
     const tol = parseFloat(tolerance);
     const maxIter = parseInt(maxIterations);
 
-    // Validate inputs
-    const fields = {};
-    let hasError = false;
+    const payload = {
+      optimizationType,
+      initialGuess: x0,
+      tolerance: tol,
+      maxIterations: maxIter,
+    };
 
-    if (isNaN(x0)) {
-      fields.x0 = true;
-      hasError = true;
-    }
-    if (isNaN(tol)) {
-      fields.tolerance = true;
-      hasError = true;
-    }
-    if (isNaN(maxIter)) {
-      fields.maxIterations = true;
-      hasError = true;
-    }
-
-    if (hasError) {
-      setError("Please enter valid numbers for all inputs.");
-      setErrorFields(fields);
-      return;
+    if (optimizationType === 'function') {
+      payload.expression = funcString;
+    } else if (optimizationType === 'data') {
+      if (!data) {
+        setError("Please upload a data file.");
+        return;
+      }
+      payload.data = data;
     }
 
     try {
-      const f_x0 = myFunction(x0);
-      const fp_x0 = myDerivativeFunction(x0);
+      const response = await fetch('http://localhost:3001/api/optimize/newton-raphson', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-      if (isNaN(f_x0) || isNaN(fp_x0)) {
-        setError(
-          "Function or derivative evaluation failed for initial guess. Check your function strings or initial guess."
-        );
-        setErrorFields({ funcString: true, fpString: true });
-        return;
-      }
+      const resData = await response.json();
 
-      // Collect all steps from the generator
-      const steps = Array.from(
-        newtonRaphson(myFunction, myDerivativeFunction, x0, tol, maxIter)
-      );
-      setAnimationSteps(steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(false);
-
-      if (steps.length > 0) {
-        setCurrentRoot(steps[steps.length - 1].x1);
-      }
-
-      // --- Calculate STATIC Plot Bounds ONCE for the initial interval ---
-      const initialPlotRangeStart = x0 - 2;
-      const initialPlotRangeEnd = x0 + 2;
-
-      const numPoints = 200;
-      const x_temp_plot = Array.from(
-        { length: numPoints },
-        (_, i) =>
-          initialPlotRangeStart +
-          (i * (initialPlotRangeEnd - initialPlotRangeStart)) / (numPoints - 1)
-      );
-      const y_temp_plot = x_temp_plot.map((x) => myFunction(x));
-
-      const finiteYValues = y_temp_plot.filter((y) => isFinite(y));
-      if (finiteYValues.length === 0) {
-        setStaticYBounds([-1, 1]);
+      if (!response.ok) {
+        setError(resData.error || 'An error occurred.');
       } else {
-        const yMin = Math.min(...finiteYValues);
-        const yMax = Math.max(...finiteYValues);
-        const yAxisPadding = (yMax - yMin) * 0.1 || 0.1;
-        setStaticYBounds([yMin - yAxisPadding, yMax + yAxisPadding]);
+        setAnimationSteps(resData.steps);
+        setResult(resData.steps[resData.steps.length - 1].x1);
       }
-      setStaticXBounds([initialPlotRangeStart, initialPlotRangeEnd]);
-    } catch (e) {
-      setError(e.message);
-      setErrorFields({ funcString: true, fpString: true });
+    } catch (err) {
+      setError('Failed to connect to the server.');
     }
-  }, [
-    funcString,
-    fpString,
-    x0Value,
-    tolerance,
-    maxIterations,
-    myFunction,
-    myDerivativeFunction,
-  ]);
+  };
+
+  const myFunction = useCallback(
+    (x) => {
+        if (optimizationType === 'function') {
+            try {
+                return math.evaluate(funcString, { x: x });
+            } catch (err) {
+                return NaN;
+            }
+        } else if (optimizationType === 'data' && data) {
+            const xs = data.map(p => p.x);
+            const ys = data.map(p => p.y);
+            const spline = new Spline(xs, ys);
+            return spline.at(x);
+        }
+        return NaN;
+    },
+    [funcString, optimizationType, data]
+  );
 
   // --- Animation Control and Navigations ---
   useEffect(() => {
@@ -201,87 +146,85 @@ function NewtonRaphsonComponent() {
     );
   };
 
-  // --- Plot Data Generation for Current Frame ---
   useEffect(() => {
-    if (
-      animationSteps.length === 0 ||
-      error ||
-      staticXBounds[0] === staticXBounds[1]
-    ) {
-      setPlotData([]);
-      return;
+    const x0 = parseFloat(x0Value);
+
+    if (isNaN(x0)) {
+        setPlotData([]);
+        return;
     }
 
-    const currentStep = animationSteps[currentStepIndex];
-    const { x0, x1 } = currentStep;
+    const initialPlotRangeStart = x0 - 5;
+    const initialPlotRangeEnd = x0 + 5;
 
     const numPoints = 200;
-    const x_plot_for_func = Array.from(
+    const x_temp_plot = Array.from(
       { length: numPoints },
       (_, i) =>
-        staticXBounds[0] +
-        (i * (staticXBounds[1] - staticXBounds[0])) / (numPoints - 1)
+        initialPlotRangeStart +
+        (i * (initialPlotRangeEnd - initialPlotRangeStart)) / (numPoints - 1)
     );
-    const y_plot_for_func = x_plot_for_func.map((x) => myFunction(x));
+    const y_temp_plot = x_temp_plot.map((x) => myFunction(x));
+
+    const finiteYValues = y_temp_plot.filter((y) => isFinite(y));
+    if (finiteYValues.length === 0) {
+      setStaticYBounds([-1, 1]);
+    } else {
+      const yMin = Math.min(...finiteYValues);
+      const yMax = Math.max(...finiteYValues);
+      const yAxisPadding = (yMax - yMin) * 0.1 || 0.1;
+      setStaticYBounds([yMin - yAxisPadding, yMax + yAxisPadding]);
+    }
+    setStaticXBounds([initialPlotRangeStart, initialPlotRangeEnd]);
 
     const newPlotData = [
-      {
-        x: x_plot_for_func,
-        y: y_plot_for_func,
-        type: "scatter",
-        mode: "lines",
-        name: "f(x)",
-        line: { color: "lightblue", width: 1 },
-      },
-      {
-        x: staticXBounds,
-        y: [0, 0],
-        mode: "lines",
-        line: { color: "gray", dash: "dot" },
-        name: "y=0",
-      },
-    ];
+        {
+          x: x_temp_plot,
+          y: y_temp_plot,
+          type: "scatter",
+          mode: "lines",
+          name: optimizationType === 'function' ? `f(x) = ${funcString}` : 'Interpolated Function',
+        },
+      ];
 
-    // Current point on the curve
-    newPlotData.push({
-      x: [x0],
-      y: [myFunction(x0)],
-      mode: "markers",
-      marker: { color: "red", size: 10, symbol: "circle" },
-      name: "Current Guess (x_n)",
-    });
+      if (animationSteps.length > 0) {
+        const currentStep = animationSteps[currentStepIndex];
+        const { x0: currentX0, x1: currentX1 } = currentStep;
 
-    // Tangent line
-    const slope = myDerivativeFunction(x0);
-    const intercept = myFunction(x0) - slope * x0;
-    const tangent_y_values = x_plot_for_func.map((x) => slope * x + intercept);
-    newPlotData.push({
-      x: x_plot_for_func,
-      y: tangent_y_values,
-      mode: "lines",
-      line: { color: "green", dash: "dash" },
-      name: "Tangent Line",
-    });
+        // Current point on the curve
+        newPlotData.push({
+          x: [currentX0],
+          y: [myFunction(currentX0)],
+          mode: "markers",
+          marker: { color: "red", size: 10, symbol: "circle" },
+          name: "Current Guess (x_n)",
+        });
 
-    // Next guess on x-axis
-    newPlotData.push({
-      x: [x1],
-      y: [0],
-      mode: "markers",
-      marker: { color: "purple", size: 10, symbol: "circle" },
-      name: "Next Guess (x_n+1)",
-    });
+        // Tangent line (numerical derivative for interpolated function)
+        const h = 1e-5;
+        const slope = (myFunction(currentX0 + h) - myFunction(currentX0 - h)) / (2 * h);
+        const intercept = myFunction(currentX0) - slope * currentX0;
+        const tangent_y_values = x_temp_plot.map((x) => slope * x + intercept);
+        newPlotData.push({
+          x: x_temp_plot,
+          y: tangent_y_values,
+          mode: "lines",
+          line: { color: "green", dash: "dash" },
+          name: "Tangent Line",
+        });
 
-    setPlotData(newPlotData);
-  }, [
-    currentStepIndex,
-    animationSteps,
-    error,
-    myFunction,
-    myDerivativeFunction,
-    staticXBounds,
-    staticYBounds,
-  ]);
+        // Next guess on x-axis
+        newPlotData.push({
+          x: [currentX1],
+          y: [0],
+          mode: "markers",
+          marker: { color: "purple", size: 10, symbol: "circle" },
+          name: "Next Guess (x_n+1)",
+        });
+      }
+      setPlotData(newPlotData);
+
+  }, [funcString, x0Value, optimizationType, data, myFunction, result, animationSteps, currentStepIndex]);
 
   return (
     <div
@@ -314,56 +257,54 @@ function NewtonRaphsonComponent() {
             gap: 2,
           }}
         >
-          {/* Description */}
           <Typography
             variant="body2"
             sx={{ fontSize: "1em", lineHeight: 1.75, marginBottom: 1 }}
           >
-            The Newton-Raphson method is an iterative root-finding algorithm
-            that uses the tangent line to approximate the function. Starting
-            with an initial guess and its derivative, it calculates the tangent
-            to the function at that point and finds where the tangent intersects
-            the x-axis. This intersection point becomes the next, improved guess
-            for the root.
+            The Newton-Raphson method is an iterative root-finding algorithm that uses the tangent line to approximate the function.
           </Typography>
 
-          {/* Input fields */}
           <Grid container spacing={2} sx={{ width: "100%" }}>
+            {optimizationType === 'function' && (
+                <>
+                <Grid item xs={12}>
+                <TextField
+                    label="Function f(x)"
+                    value={funcString}
+                    onChange={(e) => setFuncString(e.target.value)}
+                    error={errorFields.funcString}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Tolerance"
+                    type="number"
+                    value={tolerance}
+                    onChange={(e) => setTolerance(e.target.value)}
+                    error={errorFields.tolerance}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Max Iterations"
+                    type="number"
+                    value={maxIterations}
+                    onChange={(e) => setMaxIterations(e.target.value)}
+                    error={errorFields.maxIterations}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                </>
+            )}
             <Grid item xs={12}>
-              <TextField
-                label="Function f(x)"
-                value={funcString}
-                onChange={(e) => setFuncString(e.target.value)}
-                error={errorFields.funcString}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Derivative f'(x)"
-                value={fpString}
-                onChange={(e) => setFpString(e.target.value)}
-                error={errorFields.fpString}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Max Iterations"
-                type="number"
-                value={maxIterations}
-                onChange={(e) => setMaxIterations(e.target.value)}
-                error={errorFields.maxIterations}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
               <TextField
                 label="Initial Guess x0"
                 type="number"
@@ -375,45 +316,25 @@ function NewtonRaphsonComponent() {
                 fullWidth
               />
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Tolerance"
-                type="number"
-                value={tolerance}
-                onChange={(e) => setTolerance(e.target.value)}
-                error={errorFields.tolerance}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
           </Grid>
 
-          {/* Iteration & Root Display */}
-          {!error && currentRoot !== null && (
+          <Button onClick={handleOptimize} variant="contained" sx={{ backgroundColor: '#72A8C8', '&:hover': { backgroundColor: '#5a8fa8' } }}>Optimize</Button>
+
+          {result !== null && (
             <Typography
               variant="body2"
               sx={{ marginTop: 1, fontSize: "1.2em" }}
             >
               <strong>Final Root:</strong>{" "}
-              <strong>{currentRoot.toFixed(6)}</strong>
+              <strong>{result.toFixed(6)}</strong>
             </Typography>
           )}
-          {!error && currentRoot === null && animationSteps.length === 0 && (
-            <Typography
-              variant="body2"
-              sx={{ marginTop: 1, fontSize: "1.2em", color: "text.secondary" }}
-            >
-              Enter function and initial guess to calculate root...
-            </Typography>
-          )}
-          {animationSteps.length > 0 && !error && (
+          {animationSteps.length > 0 && (
             <Typography variant="body2" sx={{ fontSize: "1.2em" }}>
               Iteration: {currentStepIndex + 1} / {animationSteps.length}
             </Typography>
           )}
 
-          {/* Error Alert - at the bottom */}
           {error && (
             <Alert
               severity="warning"
@@ -438,7 +359,7 @@ function NewtonRaphsonComponent() {
               width: "100%",
               height: "100%",
               title: {
-                text: `Plot of f(x) = ${funcString}`,
+                text: optimizationType === 'function' ? `Plot of f(x) = ${funcString}`: 'Plot of Interpolated Function',
                 font: { size: 14 },
               },
               xaxis: {
@@ -456,21 +377,20 @@ function NewtonRaphsonComponent() {
             config={{ responsive: true }}
             showGraph={showGraph}
             onToggleGraph={() => setShowGraph(!showGraph)}
+            animationSteps={animationSteps}
+            currentStepIndex={currentStepIndex}
             isPlaying={isPlaying}
             onPlayPause={handlePlayPause}
             onPrevStep={handlePrevStep}
             onNextStep={handleNextStep}
             onReset={handleReset}
-            animationSteps={animationSteps}
-            currentStepIndex={currentStepIndex}
-            error={error}
             pseudocodeContent={
-              <>
-                <h4>Newton-Raphson Method Pseudocode</h4>
-                <pre
-                  style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                >
-                  {`# Pseudocode for the Newton-Raphson Method
+                <>
+                  <h4>Newton-Raphson Method Pseudocode</h4>
+                  <pre
+                    style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                  >
+                    {`# Pseudocode for the Newton-Raphson Method
 
 This algorithm finds successively better approximations to the roots (or zeroes) of a real-valued function. It starts with an initial guess and uses the function's value and its derivative to find the next approximation.
 
@@ -518,13 +438,13 @@ This algorithm finds successively better approximations to the roots (or zeroes)
   END FOR
 
   // If max_iter reached without convergence
-  OUTPUT "Newton-Raphson method did not converge after " + max_iter + " iterations."
+  OUTPUT "Newton-Raphson method did not converge after " + max_iter + " iterations." 
   RETURN null
 
 **END FUNCTION**`}
-                </pre>
-              </>
-            }
+                  </pre>
+                </>
+              }
           />
         </div>
       </div>
@@ -533,3 +453,4 @@ This algorithm finds successively better approximations to the roots (or zeroes)
 }
 
 export default NewtonRaphsonComponent;
+

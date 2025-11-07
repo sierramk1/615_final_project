@@ -4,7 +4,7 @@ import { SkipPrevious, PlayArrow, Pause, SkipNext, Replay } from '@mui/icons-mat
 import Plot from 'react-plotly.js';
 
 function GraphWithControls({
-  plotData,
+  plotData = [],
   layout,
   config,
   showGraph,
@@ -14,7 +14,7 @@ function GraphWithControls({
   onPrevStep,
   onNextStep,
   onReset,
-  animationSteps,
+  animationSteps = [],
   currentStepIndex,
   error,
   pseudocodeContent

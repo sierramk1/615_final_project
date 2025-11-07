@@ -1,0 +1,9 @@
+I spent lots of time with the user interface for the one-dimensional algorithms last week, and had planned to move onto multi-dimensional algorithms but first ended up spending more time with the one-dimensional to get the backend working.
+
+I decided to implement the backend for both one dimensional and multidimensional algorithms because I felt it would make the application more applicable and interesting. I started with the one-dimensional, and worked with Gemini to develop a plan to get the backend server running and one that that would be compatible with Vercel as I was using that to host my app prior.
+
+While I ran into many problems with the server, Gemini was helpful in trying different diagnostic tests to figure out what was causing the problem. I will say that Gemini ran out of the daily limit of the advanced model and was forced to sue the fallback mode, which definitely is not as talented or intelligent as the more advanced model. I was still trying to get the backend serve to connect to my frontend when Gemini switched and I could tell how much slower the default model is and how susceptible it is to getting stuck. 
+
+Gemini is definitely still very helpful, but as my files get longer and the project more complicated, it struggles. This reinforces my feelings that Gemini is great for  small coding tasks or designing/structuring projects, but it has its limitations.
+
+At the end of the week, Gemini and I had the backend connected to the frontend. Additionally we adopted the one-dimensional pages to allow users to switch between function vs data. The function mode works as previously, but the data mode allows them to input a csv, to which the program runs cubic spline interpolation on, and then finds the root according to whichever algorithm. I am glad to have the one-dimensional algorithms fully done, and I look forward to working on the multi-dimensional algorithms visualizations next week!

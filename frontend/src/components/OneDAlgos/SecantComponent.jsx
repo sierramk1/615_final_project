@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { secant } from "../../js/secant.js";
-import * as math from "mathjs";
-import { TextField, Alert, Typography, Box, Grid } from "@mui/material";
-import GraphWithControls from "../common/GraphWithControls.jsx";
 
-function SecantComponent() {
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { TextField, Button, Alert, Typography, Box, Grid } from "@mui/material";
+import GraphWithControls from "../common/GraphWithControls.jsx";
+import Spline from 'cubic-spline';
+import * as math from 'mathjs';
+
+function SecantComponent({ optimizationType, data }) {
   // Input states
   const [funcString, setFuncString] = useState("x^3 - x - 2");
   const [x0Value, setX0Value] = useState("1.0");
@@ -19,7 +20,7 @@ function SecantComponent() {
   const intervalRef = useRef(null);
 
   // Output states
-  const [currentRoot, setCurrentRoot] = useState(null);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [errorFields, setErrorFields] = useState({});
   const [plotData, setPlotData] = useState([]);
@@ -31,25 +32,10 @@ function SecantComponent() {
   // Toggle state for graph/description
   const [showGraph, setShowGraph] = useState(true);
 
-  // Memoized function from user input
-  const myFunction = useCallback(
-    (x) => {
-      try {
-        return math.evaluate(funcString, { x: x });
-      } catch (err) {
-        console.warn("Invalid expression:", funcString, err.message);
-        return NaN;
-      }
-    },
-    [funcString]
-  );
-
-  // --- Algorithm Execution and Step Generation ---
-  useEffect(() => {
-    // Reset states
+  const handleOptimize = async () => {
     setError(null);
     setErrorFields({});
-    setCurrentRoot(null);
+    setResult(null);
     setAnimationSteps([]);
     setCurrentStepIndex(0);
     setIsPlaying(false);
@@ -57,89 +43,68 @@ function SecantComponent() {
       clearInterval(intervalRef.current);
     }
 
-    // Parse inputs
     const x0 = parseFloat(x0Value);
     const x1 = parseFloat(x1Value);
     const tol = parseFloat(tolerance);
     const maxIter = parseInt(maxIterations);
 
-    // Validate inputs
-    const fields = {};
-    let hasError = false;
+    const payload = {
+      optimizationType,
+      initialGuess: { x0, x1 },
+      tolerance: tol,
+      maxIterations: maxIter,
+    };
 
-    if (isNaN(x0)) {
-      fields.x0 = true;
-      hasError = true;
-    }
-    if (isNaN(x1)) {
-      fields.x1 = true;
-      hasError = true;
-    }
-    if (isNaN(tol)) {
-      fields.tolerance = true;
-      hasError = true;
-    }
-    if (isNaN(maxIter)) {
-      fields.maxIterations = true;
-      hasError = true;
-    }
-
-    if (hasError) {
-      setError("Please enter valid numbers for all inputs.");
-      setErrorFields(fields);
-      return;
+    if (optimizationType === 'function') {
+      payload.expression = funcString;
+    } else if (optimizationType === 'data') {
+      if (!data) {
+        setError("Please upload a data file.");
+        return;
+      }
+      payload.data = data;
     }
 
     try {
-      const f_x0 = myFunction(x0);
-      const f_x1 = myFunction(x1);
+      const response = await fetch('http://localhost:3001/api/optimize/secant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-      if (isNaN(f_x0) || isNaN(f_x1)) {
-        setError(
-          "Function evaluation failed for initial guesses. Check your function string or initial guesses."
-        );
-        setErrorFields({ funcString: true });
-        return;
-      }
+      const resData = await response.json();
 
-      // Collect all steps from the generator
-      const steps = Array.from(secant(myFunction, x0, x1, tol, maxIter));
-      setAnimationSteps(steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(false);
-
-      if (steps.length > 0) {
-        setCurrentRoot(steps[steps.length - 1].x2);
-      }
-
-      // --- Calculate STATIC Plot Bounds ONCE for the initial interval ---
-      const initialPlotRangeStart = Math.min(x0, x1) - Math.abs(x1 - x0) * 0.5;
-      const initialPlotRangeEnd = Math.max(x0, x1) + Math.abs(x1 - x0) * 0.5;
-
-      const numPoints = 200;
-      const x_temp_plot = Array.from(
-        { length: numPoints },
-        (_, i) =>
-          initialPlotRangeStart +
-          (i * (initialPlotRangeEnd - initialPlotRangeStart)) / (numPoints - 1)
-      );
-      const y_temp_plot = x_temp_plot.map((x) => myFunction(x));
-
-      const finiteYValues = y_temp_plot.filter((y) => isFinite(y));
-      if (finiteYValues.length === 0) {
-        setStaticYBounds([-1, 1]);
+      if (!response.ok) {
+        setError(resData.error || 'An error occurred.');
       } else {
-        const yMin = Math.min(...finiteYValues);
-        const yMax = Math.max(...finiteYValues);
-        const yAxisPadding = (yMax - yMin) * 0.1 || 0.1;
-        setStaticYBounds([yMin - yAxisPadding, yMax + yAxisPadding]);
+        setAnimationSteps(resData.steps);
+        setResult(resData.steps[resData.steps.length - 1].x2);
       }
-      setStaticXBounds([initialPlotRangeStart, initialPlotRangeEnd]);
-    } catch (e) {
-      setError(e.message);
-      setErrorFields({ funcString: true });
+    } catch (err) {
+      setError('Failed to connect to the server.');
     }
-  }, [funcString, x0Value, x1Value, tolerance, maxIterations, myFunction]);
+  };
+
+  const myFunction = useCallback(
+    (x) => {
+        if (optimizationType === 'function') {
+            try {
+                return math.evaluate(funcString, { x: x });
+            } catch (err) {
+                return NaN;
+            }
+        } else if (optimizationType === 'data' && data) {
+            const xs = data.map(p => p.x);
+            const ys = data.map(p => p.y);
+            const spline = new Spline(xs, ys);
+            return spline.at(x);
+        }
+        return NaN;
+    },
+    [funcString, optimizationType, data]
+  );
 
   // --- Animation Control and Navigations ---
   useEffect(() => {
@@ -183,86 +148,85 @@ function SecantComponent() {
     );
   };
 
-  // --- Plot Data Generation for Current Frame ---
   useEffect(() => {
-    if (
-      animationSteps.length === 0 ||
-      error ||
-      staticXBounds[0] === staticXBounds[1]
-    ) {
-      setPlotData([]);
-      return;
+    const x0 = parseFloat(x0Value);
+    const x1 = parseFloat(x1Value);
+
+    if (isNaN(x0) || isNaN(x1)) {
+        setPlotData([]);
+        return;
     }
 
-    const currentStep = animationSteps[currentStepIndex];
-    const { x0, x1, x2 } = currentStep;
+    const initialPlotRangeStart = Math.min(x0, x1) - 2;
+    const initialPlotRangeEnd = Math.max(x0, x1) + 2;
 
     const numPoints = 200;
-    const x_plot_for_func = Array.from(
+    const x_temp_plot = Array.from(
       { length: numPoints },
       (_, i) =>
-        staticXBounds[0] +
-        (i * (staticXBounds[1] - staticXBounds[0])) / (numPoints - 1)
+        initialPlotRangeStart +
+        (i * (initialPlotRangeEnd - initialPlotRangeStart)) / (numPoints - 1)
     );
-    const y_plot_for_func = x_plot_for_func.map((x) => myFunction(x));
+    const y_temp_plot = x_temp_plot.map((x) => myFunction(x));
+
+    const finiteYValues = y_temp_plot.filter((y) => isFinite(y));
+    if (finiteYValues.length === 0) {
+      setStaticYBounds([-1, 1]);
+    } else {
+      const yMin = Math.min(...finiteYValues);
+      const yMax = Math.max(...finiteYValues);
+      const yAxisPadding = (yMax - yMin) * 0.1 || 0.1;
+      setStaticYBounds([yMin - yAxisPadding, yMax + yAxisPadding]);
+    }
+    setStaticXBounds([initialPlotRangeStart, initialPlotRangeEnd]);
 
     const newPlotData = [
-      {
-        x: x_plot_for_func,
-        y: y_plot_for_func,
-        type: "scatter",
-        mode: "lines",
-        name: "f(x)",
-        line: { color: "lightblue", width: 1 },
-      },
-      {
-        x: staticXBounds,
-        y: [0, 0],
-        mode: "lines",
-        line: { color: "gray", dash: "dot" },
-        name: "y=0",
-      },
-    ];
+        {
+          x: x_temp_plot,
+          y: y_temp_plot,
+          type: "scatter",
+          mode: "lines",
+          name: optimizationType === 'function' ? `f(x) = ${funcString}` : 'Interpolated Function',
+        },
+      ];
 
-    // Plot current points on the curve
-    newPlotData.push({
-      x: [x0, x1],
-      y: [myFunction(x0), myFunction(x1)],
-      mode: "markers",
-      marker: { color: "red", size: 10, symbol: "circle" },
-      name: "Current Points (x0, x1)",
-    });
+      if (animationSteps.length > 0) {
+        const currentStep = animationSteps[currentStepIndex];
+        const { x0: currentX0, x1: currentX1, x2: currentX2 } = currentStep;
 
-    // Secant line
-    const slope = (myFunction(x1) - myFunction(x0)) / (x1 - x0);
-    const intercept = myFunction(x0) - slope * x0;
-    const secant_y_values = x_plot_for_func.map((x) => slope * x + intercept);
-    newPlotData.push({
-      x: x_plot_for_func,
-      y: secant_y_values,
-      mode: "lines",
-      line: { color: "green", dash: "dash" },
-      name: "Secant Line",
-    });
+        // Plot current points on the curve
+        newPlotData.push({
+          x: [currentX0, currentX1],
+          y: [myFunction(currentX0), myFunction(currentX1)],
+          mode: "markers",
+          marker: { color: "red", size: 10, symbol: "circle" },
+          name: "Current Points (x0, x1)",
+        });
 
-    // Next guess on x-axis
-    newPlotData.push({
-      x: [x2],
-      y: [0],
-      mode: "markers",
-      marker: { color: "purple", size: 10, symbol: "circle" },
-      name: "Next Guess (x_n+1)",
-    });
+        // Secant line
+        const slope = (myFunction(currentX1) - myFunction(currentX0)) / (currentX1 - currentX0);
+        const intercept = myFunction(currentX0) - slope * currentX0;
+        const secant_y_values = x_temp_plot.map((x) => slope * x + intercept);
+        newPlotData.push({
+          x: x_temp_plot,
+          y: secant_y_values,
+          mode: "lines",
+          line: { color: "green", dash: "dash" },
+          name: "Secant Line",
+        });
 
-    setPlotData(newPlotData);
-  }, [
-    currentStepIndex,
-    animationSteps,
-    error,
-    myFunction,
-    staticXBounds,
-    staticYBounds,
-  ]);
+        // Next guess on x-axis
+        newPlotData.push({
+          x: [currentX2],
+          y: [0],
+          mode: "markers",
+          marker: { color: "purple", size: 10, symbol: "circle" },
+          name: "Next Guess (x_n+1)",
+        });
+      }
+      setPlotData(newPlotData);
+
+  }, [funcString, x0Value, x1Value, optimizationType, data, myFunction, result, animationSteps, currentStepIndex]);
 
   return (
     <div
@@ -295,43 +259,53 @@ function SecantComponent() {
             gap: 2,
           }}
         >
-          {/* Description */}
           <Typography
             variant="body2"
             sx={{ fontSize: "1em", lineHeight: 1.75, marginBottom: 1 }}
           >
-            The Secant method is a root-finding algorithm that uses a
-            succession of roots of secant lines to better approximate a root of
-            a function. It is similar to Newton's method but avoids the need
-            for an analytical derivative by approximating it with a finite
-            difference.
+            The Secant method is a root-finding algorithm that uses a succession of roots of secant lines to better approximate a root of a function.
           </Typography>
 
-          {/* Input fields */}
           <Grid container spacing={2} sx={{ width: "100%" }}>
-            <Grid item xs={12}>
-              <TextField
-                label="Function f(x)"
-                value={funcString}
-                onChange={(e) => setFuncString(e.target.value)}
-                error={errorFields.funcString}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Max Iterations"
-                type="number"
-                value={maxIterations}
-                onChange={(e) => setMaxIterations(e.target.value)}
-                error={errorFields.maxIterations}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
+            {optimizationType === 'function' && (
+                <>
+                <Grid item xs={12}>
+                <TextField
+                    label="Function f(x)"
+                    value={funcString}
+                    onChange={(e) => setFuncString(e.target.value)}
+                    error={errorFields.funcString}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Tolerance"
+                    type="number"
+                    value={tolerance}
+                    onChange={(e) => setTolerance(e.target.value)}
+                    error={errorFields.tolerance}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Max Iterations"
+                    type="number"
+                    value={maxIterations}
+                    onChange={(e) => setMaxIterations(e.target.value)}
+                    error={errorFields.maxIterations}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                </>
+            )}
             <Grid item xs={6}>
               <TextField
                 label="Initial Guess x0"
@@ -356,45 +330,25 @@ function SecantComponent() {
                 fullWidth
               />
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Tolerance"
-                type="number"
-                value={tolerance}
-                onChange={(e) => setTolerance(e.target.value)}
-                error={errorFields.tolerance}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
           </Grid>
 
-          {/* Iteration & Root Display */}
-          {!error && currentRoot !== null && (
+          <Button onClick={handleOptimize} variant="contained" sx={{ backgroundColor: '#72A8C8', '&:hover': { backgroundColor: '#5a8fa8' } }}>Optimize</Button>
+
+          {result !== null && (
             <Typography
               variant="body2"
               sx={{ marginTop: 1, fontSize: "1.2em" }}
             >
               <strong>Final Root:</strong>{" "}
-              <strong>{currentRoot.toFixed(6)}</strong>
+              <strong>{result.toFixed(6)}</strong>
             </Typography>
           )}
-          {!error && currentRoot === null && animationSteps.length === 0 && (
-            <Typography
-              variant="body2"
-              sx={{ marginTop: 1, fontSize: "1.2em", color: "text.secondary" }}
-            >
-              Enter function and initial guesses to calculate root...
-            </Typography>
-          )}
-          {animationSteps.length > 0 && !error && (
+          {animationSteps.length > 0 && (
             <Typography variant="body2" sx={{ fontSize: "1.2em" }}>
               Iteration: {currentStepIndex + 1} / {animationSteps.length}
             </Typography>
           )}
 
-          {/* Error Alert - at the bottom */}
           {error && (
             <Alert
               severity="warning"
@@ -419,7 +373,7 @@ function SecantComponent() {
               width: "100%",
               height: "100%",
               title: {
-                text: `Plot of f(x) = ${funcString}`,
+                text: optimizationType === 'function' ? `Plot of f(x) = ${funcString}`: 'Plot of Interpolated Function',
                 font: { size: 14 },
               },
               xaxis: {
@@ -437,21 +391,20 @@ function SecantComponent() {
             config={{ responsive: true }}
             showGraph={showGraph}
             onToggleGraph={() => setShowGraph(!showGraph)}
+            animationSteps={animationSteps}
+            currentStepIndex={currentStepIndex}
             isPlaying={isPlaying}
             onPlayPause={handlePlayPause}
             onPrevStep={handlePrevStep}
             onNextStep={handleNextStep}
             onReset={handleReset}
-            animationSteps={animationSteps}
-            currentStepIndex={currentStepIndex}
-            error={error}
             pseudocodeContent={
-              <>
-                <h4>Secant Method Pseudocode</h4>
-                <pre
-                  style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                >
-                  {`# Pseudocode for the Secant Method
+                <>
+                  <h4>Secant Method Pseudocode</h4>
+                  <pre
+                    style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                  >
+                    {`# Pseudocode for the Secant Method
 
 This algorithm is a root-finding method that uses a succession of roots of secant lines to better approximate a root of a function. It is similar to Newton's method but avoids the need for an analytical derivative by approximating it with a finite difference.
 
@@ -507,9 +460,9 @@ This algorithm is a root-finding method that uses a succession of roots of secan
   RETURN null
 
 **END FUNCTION**`}
-                </pre>
-              </>
-            }
+                  </pre>
+                </>
+              }
           />
         </div>
       </div>
@@ -518,4 +471,3 @@ This algorithm is a root-finding method that uses a succession of roots of secan
 }
 
 export default SecantComponent;
-

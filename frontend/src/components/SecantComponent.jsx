@@ -10,6 +10,9 @@ function SecantComponent() {
   const [x1Value, setX1Value] = useState('2.0');
   const [tolerance, setTolerance] = useState('1e-6');
   const [maxIterations, setMaxIterations] = useState('100');
+  const [mode, setMode] = useState("symbolic"); // symbolic or data
+  const [dataPoints, setDataPoints] = useState([]);
+
 
   // State to trigger calculation automatically (removed manual trigger)
   // const [triggerCalculation, setTriggerCalculation] = useState(0);
@@ -32,15 +35,45 @@ function SecantComponent() {
   // Toggle state for graph/description
   const [showGraph, setShowGraph] = useState(true);
 
-  // Memoized function from user input
-  const myFunction = useCallback((x) => {
-    try {
-      return math.evaluate(funcString, { x: x });
-    } catch (err) {
-      console.warn("Invalid expression:", funcString, err.message);
-      return NaN; 
-    }
-  }, [funcString]);
+  // --- File Upload Handler ---
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("http://localhost:5000/upload-data", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    setDataPoints(data.points); // store x,y pairs from backend 
+  };
+
+  // --- FUNCTION FOR ALGORITHM ---
+    const myFunction = useCallback((x) => {
+      if (mode === "symbolic") {
+        try {
+          return math.evaluate(funcString, { x });
+        } catch (err) {
+          console.warn("Invalid function:", err.message);
+          return NaN;
+        }
+      } else if (mode === "data") {
+        if (!dataPoints || dataPoints.length === 0) return NaN;
+        for (let i = 0; i < dataPoints.length - 1; i++) {
+          const p1 = dataPoints[i];
+          const p2 = dataPoints[i + 1];
+          if (x >= p1.x && x <= p2.x) {
+            const t = (x - p1.x) / (p2.x - p1.x);
+            return p1.y + t * (p2.y - p1.y);
+          }
+        }
+        return NaN; // outside range
+      }
+    }, [mode, funcString, dataPoints]);
 
   // --- Algorithm Execution and Step Generation ---
   useEffect(() => {
@@ -223,6 +256,18 @@ function SecantComponent() {
           <div style={{ marginBottom: '10px' }}>
             <label>Function f(x): <input type="text" value={funcString} onChange={(e) => setFuncString(e.target.value)} style={{ marginLeft: '10px', width: '200px' }} /></label>
           </div>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Function Source: </label>
+            <select value={mode} onChange={(e) => setMode(e.target.value)}>
+              <option value="symbolic">User Typed Function</option>
+              <option value="data">Use Uploaded Data</option>
+            </select>
+          </div>
+          {mode === "data" && (
+            <div style={{ marginBottom: '10px' }}>
+              <input type="file" accept=".csv" onChange={handleFileUpload} />
+            </div>
+          )}
           <div style={{ marginBottom: '10px' }}>
             <label>Initial Guess x0: <input type="number" value={x0Value} onChange={(e) => setX0Value(e.target.value)} style={{ marginLeft: '10px', width: '80px' }} /></label>
           </div>

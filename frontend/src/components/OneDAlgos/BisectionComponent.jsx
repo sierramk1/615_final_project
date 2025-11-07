@@ -1,36 +1,17 @@
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { bisection } from "../../js/bisection.js"; // Now a generator
-import * as math from "mathjs";
-import { TextField, Alert, Typography, Box, Grid } from "@mui/material";
+import { TextField, Button, Alert, Typography, Box, Grid } from "@mui/material";
 import GraphWithControls from "../common/GraphWithControls.jsx";
+import Spline from 'cubic-spline';
+import * as math from 'mathjs';
 
-// Custom hook for debouncing values (no longer used for main calculation, but kept for reference if needed elsewhere)
-function useDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
-function BisectionComponent() {
+function BisectionComponent({ optimizationType, data }) {
   // Input states
   const [funcString, setFuncString] = useState("x*x - 4");
   const [aValue, setAValue] = useState("0");
   const [bValue, setBValue] = useState("5");
   const [tolerance, setTolerance] = useState("1e-6");
   const [maxIterations, setMaxIterations] = useState("100");
-
-  // State to trigger calculation automatically (removed manual trigger)
-  // const [triggerCalculation, setTriggerCalculation] = useState(0);
 
   // Animation states
   const [animationSteps, setAnimationSteps] = useState([]);
@@ -39,7 +20,7 @@ function BisectionComponent() {
   const intervalRef = useRef(null);
 
   // Output states
-  const [currentRoot, setCurrentRoot] = useState(null);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [errorFields, setErrorFields] = useState({});
   const [plotData, setPlotData] = useState([]);
@@ -51,25 +32,10 @@ function BisectionComponent() {
   // Toggle state for graph/description
   const [showGraph, setShowGraph] = useState(true);
 
-  // Memoized function from user input
-  const myFunction = useCallback(
-    (x) => {
-      try {
-        return math.evaluate(funcString, { x: x });
-      } catch (err) {
-        console.warn("Invalid expression:", funcString, err.message);
-        return NaN; // Return a function that always returns NaN on error
-      }
-    },
-    [funcString]
-  );
-
-  // --- Algorithm Execution and Step Generation ---
-  useEffect(() => {
-    // Reset states
+  const handleOptimize = async () => {
     setError(null);
     setErrorFields({});
-    setCurrentRoot(null);
+    setResult(null);
     setAnimationSteps([]);
     setCurrentStepIndex(0);
     setIsPlaying(false);
@@ -77,103 +43,68 @@ function BisectionComponent() {
       clearInterval(intervalRef.current);
     }
 
-    // Parse inputs
     const a = parseFloat(aValue);
     const b = parseFloat(bValue);
     const tol = parseFloat(tolerance);
     const maxIter = parseInt(maxIterations);
 
-    // Validate inputs
-    const fields = {};
-    let hasError = false;
+    const payload = {
+      optimizationType,
+      initialGuess: { a, b },
+      tolerance: tol,
+      maxIterations: maxIter,
+    };
 
-    if (isNaN(a)) {
-      fields.a = true;
-      hasError = true;
-    }
-    if (isNaN(b)) {
-      fields.b = true;
-      hasError = true;
-    }
-    if (isNaN(tol)) {
-      fields.tolerance = true;
-      hasError = true;
-    }
-    if (isNaN(maxIter)) {
-      fields.maxIterations = true;
-      hasError = true;
-    }
-
-    if (hasError) {
-      setError("Please enter valid numbers for all inputs.");
-      setErrorFields(fields);
-      return;
-    }
-
-    if (a >= b) {
-      setError("'a' must be less than 'b'.");
-      setErrorFields({ a: true, b: true });
-      return;
+    if (optimizationType === 'function') {
+      payload.expression = funcString;
+    } else if (optimizationType === 'data') {
+      if (!data) {
+        setError("Please upload a data file.");
+        return;
+      }
+      payload.data = data;
     }
 
     try {
-      const f_a = myFunction(a);
-      const f_b = myFunction(b);
+      const response = await fetch('http://localhost:3001/api/optimize/bisection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-      if (isNaN(f_a) || isNaN(f_b)) {
-        setError(
-          "Function evaluation failed for initial interval. Check your function string or interval."
-        );
-        setErrorFields({ funcString: true });
-        return;
-      }
+      const resData = await response.json();
 
-      if (f_a * f_b >= 0) {
-        setError(
-          "f(a) and f(b) must have opposite signs for bisection to work."
-        );
-        setErrorFields({ a: true, b: true });
-        return;
-      }
-
-      // Collect all steps from the generator
-      const steps = Array.from(bisection(myFunction, a, b, tol, maxIter));
-      setAnimationSteps(steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(false);
-
-      if (steps.length > 0) {
-        setCurrentRoot(steps[steps.length - 1].mid); // Final root is the last midpoint
-      }
-
-      // --- Calculate STATIC Plot Bounds ONCE for the initial interval ---
-      const initialPlotRangeStart = Math.min(a, b) - Math.abs(b - a) * 0.5;
-      const initialPlotRangeEnd = Math.max(a, b) + Math.abs(b - a) * 0.5;
-
-      const numPoints = 200;
-      const x_temp_plot = Array.from(
-        { length: numPoints },
-        (_, i) =>
-          initialPlotRangeStart +
-          (i * (initialPlotRangeEnd - initialPlotRangeStart)) / (numPoints - 1)
-      );
-      const y_temp_plot = x_temp_plot.map((x) => myFunction(x));
-
-      const finiteYValues = y_temp_plot.filter((y) => isFinite(y));
-      if (finiteYValues.length === 0) {
-        setStaticYBounds([-1, 1]);
+      if (!response.ok) {
+        setError(resData.error || 'An error occurred.');
       } else {
-        const yMin = Math.min(...finiteYValues);
-        const yMax = Math.max(...finiteYValues);
-        const yAxisPadding = (yMax - yMin) * 0.1 || 0.1;
-        setStaticYBounds([yMin - yAxisPadding, yMax + yAxisPadding]);
+        setAnimationSteps(resData.steps);
+        setResult(resData.steps[resData.steps.length - 1].c);
       }
-      setStaticXBounds([initialPlotRangeStart, initialPlotRangeEnd]);
-    } catch (e) {
-      setError(e.message);
-      setErrorFields({ funcString: true });
+    } catch (err) {
+      setError('Failed to connect to the server.');
     }
-  }, [funcString, aValue, bValue, tolerance, maxIterations, myFunction]); // Now depends directly on inputs
+  };
+
+  const myFunction = useCallback(
+    (x) => {
+        if (optimizationType === 'function') {
+            try {
+                return math.evaluate(funcString, { x: x });
+            } catch (err) {
+                return NaN;
+            }
+        } else if (optimizationType === 'data' && data) {
+            const xs = data.map(p => p.x);
+            const ys = data.map(p => p.y);
+            const spline = new Spline(xs, ys);
+            return spline.at(x);
+        }
+        return NaN;
+    },
+    [funcString, optimizationType, data]
+  );
 
   // --- Animation Control and Navigations ---
   useEffect(() => {
@@ -217,92 +148,110 @@ function BisectionComponent() {
     );
   };
 
-  // --- Plot Data Generation for Current Frame ---
   useEffect(() => {
-    if (
-      animationSteps.length === 0 ||
-      error ||
-      staticXBounds[0] === staticXBounds[1]
-    ) {
-      setPlotData([]);
-      return;
+    console.log("Plotting useEffect triggered.");
+    console.log("animationSteps:", animationSteps);
+    console.log("currentStepIndex:", currentStepIndex);
+
+    const a = parseFloat(aValue);
+    const b = parseFloat(bValue);
+
+    if (isNaN(a) || isNaN(b) || a >= b) {
+        setPlotData([]);
+        return;
     }
 
-    const currentStep = animationSteps[currentStepIndex];
-    const { a, b, mid } = currentStep;
+    const initialPlotRangeStart = Math.min(a, b) - Math.abs(b - a) * 0.5;
+    const initialPlotRangeEnd = Math.max(a, b) + Math.abs(b - a) * 0.5;
 
     const numPoints = 200;
-    const x_plot_for_func = Array.from(
+    const x_temp_plot = Array.from(
       { length: numPoints },
       (_, i) =>
-        staticXBounds[0] +
-        (i * (staticXBounds[1] - staticXBounds[0])) / (numPoints - 1)
+        initialPlotRangeStart +
+        (i * (initialPlotRangeEnd - initialPlotRangeStart)) / (numPoints - 1)
     );
-    const y_plot_for_func = x_plot_for_func.map((x) => myFunction(x));
+    const y_temp_plot = x_temp_plot.map((x) => myFunction(x));
 
-    const x_active_segment = x_plot_for_func.filter(
-      (x_val) => x_val >= a && x_val <= b
-    );
-    const y_active_segment = x_active_segment.map((x_val) => myFunction(x_val));
+    const finiteYValues = y_temp_plot.filter((y) => isFinite(y));
+    if (finiteYValues.length === 0) {
+      setStaticYBounds([-1, 1]);
+    } else {
+      const yMin = Math.min(...finiteYValues);
+      const yMax = Math.max(...finiteYValues);
+      const yAxisPadding = (yMax - yMin) * 0.1 || 0.1;
+      setStaticYBounds([yMin - yAxisPadding, yMax + yAxisPadding]);
+    }
+    setStaticXBounds([initialPlotRangeStart, initialPlotRangeEnd]);
 
     const newPlotData = [
-      {
-        x: x_plot_for_func,
-        y: y_plot_for_func,
-        type: "scatter",
-        mode: "lines",
-        name: "f(x)",
-        line: { color: "lightblue", width: 1 },
-      },
-      {
-        x: x_active_segment,
-        y: y_active_segment,
-        type: "scatter",
-        mode: "lines",
-        name: "f(x) in [a,b]",
-        line: { color: "blue", width: 3 },
-      },
-      {
-        x: [a, a],
-        y: staticYBounds,
-        mode: "lines",
-        line: { color: "red", dash: "dash" },
-        name: "Current A",
-      },
-      {
-        x: [b, b],
-        y: staticYBounds,
-        mode: "lines",
-        line: { color: "red", dash: "dash" },
-        name: "Current B",
-      },
-    ];
+        {
+          x: x_temp_plot,
+          y: y_temp_plot,
+          type: "scatter",
+          mode: "lines",
+          name: optimizationType === 'function' ? `f(x) = ${funcString}` : 'Interpolated Function',
+        },
+      ];
 
-    if (mid !== null) {
-      newPlotData.push({
-        x: [mid],
-        y: [myFunction(mid)],
-        mode: "markers",
-        marker: { color: "green", size: 10, symbol: "circle" },
-        name: "Midpoint",
-      });
-      newPlotData.push({
-        x: staticXBounds,
-        y: [0, 0],
-        mode: "lines",
-        line: { color: "gray", dash: "dot" },
-        name: "y=0",
-      });
-    }
-    setPlotData(newPlotData);
-  }, [
-    currentStepIndex,
-    animationSteps,
-    error,
-    myFunction,
-    staticXBounds,
-    staticYBounds,
-  ]);
+      if (animationSteps.length > 0) {
+        const currentStep = animationSteps[currentStepIndex];
+        const { a: currentA, b: currentB, c: currentC } = currentStep;
+
+        // Active segment
+        const x_active_segment = x_temp_plot.filter(
+          (x_val) => x_val >= currentA && x_val <= currentB
+        );
+        const y_active_segment = x_active_segment.map((x_val) => myFunction(x_val));
+
+        newPlotData.push({
+          x: x_active_segment,
+          y: y_active_segment,
+          type: "scatter",
+          mode: "lines",
+          name: "f(x) in [a,b]",
+          line: { color: "blue", width: 3 },
+        });
+
+        // Current A and B lines
+        newPlotData.push({
+          x: [currentA, currentA],
+          y: staticYBounds,
+          mode: "lines",
+          line: { color: "red", dash: "dash" },
+          name: "Current A",
+        });
+        newPlotData.push({
+          x: [currentB, currentB],
+          y: staticYBounds,
+          mode: "lines",
+          line: { color: "red", dash: "dash" },
+          name: "Current B",
+        });
+
+        // Midpoint
+        if (currentC !== null) {
+          newPlotData.push({
+            x: [currentC],
+            y: [myFunction(currentC)],
+            mode: "markers",
+            marker: { color: "green", size: 10, symbol: "circle" },
+            name: "Midpoint",
+          });
+        }
+
+        // Y=0 line
+        newPlotData.push({
+          x: staticXBounds,
+          y: [0, 0],
+          mode: "lines",
+          line: { color: "gray", dash: "dot" },
+          name: "y=0",
+        });
+      }
+      setPlotData(newPlotData);
+
+  }, [funcString, aValue, bValue, optimizationType, data, myFunction, result, animationSteps, currentStepIndex]);
 
   return (
     <div
@@ -335,43 +284,55 @@ function BisectionComponent() {
             gap: 2,
           }}
         >
-          {/* Description */}
           <Typography
             variant="body2"
             sx={{ fontSize: "1em", lineHeight: 1.75, marginBottom: 1 }}
           >
             The Bisection Method is a root-finding algorithm that repeatedly
             bisects an interval and then selects a sub-interval in which a root
-            must lie for further processing. It requires the function to be
-            continuous and for the initial interval [a, b] to have f(a) and f(b)
-            with opposite signs, guaranteeing a root within that interval.
+            must lie for further processing.
           </Typography>
 
-          {/* Input fields */}
           <Grid container spacing={2} sx={{ width: "100%" }}>
-            <Grid item xs={12}>
-              <TextField
-                label="Function f(x)"
-                value={funcString}
-                onChange={(e) => setFuncString(e.target.value)}
-                error={errorFields.funcString}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Max Iterations"
-                type="number"
-                value={maxIterations}
-                onChange={(e) => setMaxIterations(e.target.value)}
-                error={errorFields.maxIterations}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
+            {optimizationType === 'function' && (
+                <>
+                <Grid item xs={12}>
+                <TextField
+                    label="Function f(x)"
+                    value={funcString}
+                    onChange={(e) => setFuncString(e.target.value)}
+                    error={errorFields.funcString}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Tolerance"
+                    type="number"
+                    value={tolerance}
+                    onChange={(e) => setTolerance(e.target.value)}
+                    error={errorFields.tolerance}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Max Iterations"
+                    type="number"
+                    value={maxIterations}
+                    onChange={(e) => setMaxIterations(e.target.value)}
+                    error={errorFields.maxIterations}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                </>
+            )}
             <Grid item xs={6}>
               <TextField
                 label="Interval a"
@@ -396,45 +357,25 @@ function BisectionComponent() {
                 fullWidth
               />
             </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Tolerance"
-                type="number"
-                value={tolerance}
-                onChange={(e) => setTolerance(e.target.value)}
-                error={errorFields.tolerance}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </Grid>
           </Grid>
 
-          {/* Iteration & Root Display */}
-          {!error && currentRoot !== null && (
+          <Button onClick={handleOptimize} variant="contained" sx={{ backgroundColor: '#72A8C8', '&:hover': { backgroundColor: '#5a8fa8' } }}>Optimize</Button>
+
+          {result !== null && (
             <Typography
               variant="body2"
               sx={{ marginTop: 1, fontSize: "1.2em" }}
             >
               <strong>Final Root:</strong>{" "}
-              <strong>{currentRoot.toFixed(6)}</strong>
+              <strong>{result.toFixed(6)}</strong>
             </Typography>
           )}
-          {!error && currentRoot === null && animationSteps.length === 0 && (
-            <Typography
-              variant="body2"
-              sx={{ marginTop: 1, fontSize: "1.2em", color: "text.secondary" }}
-            >
-              Enter function and interval to calculate root...
-            </Typography>
-          )}
-          {animationSteps.length > 0 && !error && (
+          {animationSteps.length > 0 && (
             <Typography variant="body2" sx={{ fontSize: "1.2em" }}>
               Iteration: {currentStepIndex + 1} / {animationSteps.length}
             </Typography>
           )}
 
-          {/* Error Alert - at the bottom */}
           {error && (
             <Alert
               severity="warning"
@@ -453,15 +394,13 @@ function BisectionComponent() {
             height: "100%",
           }}
         >
-          {" "}
-          {/* Right side: Graph or Pseudocode + Description */}
           <GraphWithControls
             plotData={plotData}
             layout={{
               width: "100%",
               height: "100%",
               title: {
-                text: `Plot of f(x) = ${funcString}`,
+                text: optimizationType === 'function' ? `Plot of f(x) = ${funcString}`: 'Plot of Interpolated Function',
                 font: { size: 14 },
               },
               xaxis: {
@@ -479,21 +418,20 @@ function BisectionComponent() {
             config={{ responsive: true }}
             showGraph={showGraph}
             onToggleGraph={() => setShowGraph(!showGraph)}
+            animationSteps={animationSteps}
+            currentStepIndex={currentStepIndex}
             isPlaying={isPlaying}
             onPlayPause={handlePlayPause}
             onPrevStep={handlePrevStep}
             onNextStep={handleNextStep}
             onReset={handleReset}
-            animationSteps={animationSteps}
-            currentStepIndex={currentStepIndex}
-            error={error}
             pseudocodeContent={
-              <>
-                <h4>Bisection Method Pseudocode</h4>
-                <pre
-                  style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                >
-                  {`# Pseudocode for the Bisection Method
+                <>
+                  <h4>Bisection Method Pseudocode</h4>
+                  <pre
+                    style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                  >
+                    {`# Pseudocode for the Bisection Method
 
 This algorithm is a root-finding method that repeatedly bisects an interval and then selects a subinterval in which a root must lie for further processing. It requires the function to be continuous and for the initial interval [a, b] to have f(a) and f(b) with opposite signs, guaranteeing a root within that interval.
 
@@ -547,9 +485,9 @@ This algorithm is a root-finding method that repeatedly bisects an interval and 
   RETURN null
 
 **END FUNCTION**`}
-                </pre>
-              </>
-            }
+                  </pre>
+                </>
+              }
           />
         </div>
       </div>

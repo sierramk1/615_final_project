@@ -1,7 +1,19 @@
-
+# macOS
 .DS_Store
+
+# Python
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+venv/
 backend/venv/
-*.py
+
+# Node
+node_modules/
+
+# Logs
+*.log
+
+# R
+.Rhistory
+.RData
