@@ -66,7 +66,7 @@ function GoldenSearchComponent({ optimizationType, data }) {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/optimize/golden-search', {
+      const response = await fetch('http://localhost:8000/api/optimize/golden-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

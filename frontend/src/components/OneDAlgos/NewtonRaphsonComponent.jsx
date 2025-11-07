@@ -64,7 +64,7 @@ function NewtonRaphsonComponent({ optimizationType, data }) {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/optimize/newton-raphson', {
+      const response = await fetch('http://localhost:8000/api/optimize/newton-raphson', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

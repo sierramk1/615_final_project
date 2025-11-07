@@ -66,7 +66,7 @@ function SecantComponent({ optimizationType, data }) {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/optimize/secant', {
+      const response = await fetch('http://localhost:8000/api/optimize/secant', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

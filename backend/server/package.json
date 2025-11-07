@@ -1,6 +1,9 @@
 {
   "type": "module",
   "dependencies": {
-    "express": "^5.1.0"
+    "cubic-spline": "^3.0.3",
+    "express": "^5.1.0",
+    "mathjs": "^15.1.0",
+    "multer": "^2.0.2"
   }
 }

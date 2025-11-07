@@ -66,7 +66,7 @@ function BisectionComponent({ optimizationType, data }) {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/optimize/bisection', {
+      const response = await fetch('http://localhost:8000/api/optimize/bisection', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
