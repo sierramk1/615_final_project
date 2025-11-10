@@ -7,6 +7,9 @@ import goldenSearchRouter from "./routes/goldenSearch.js";
 import newtonRaphsonRouter from "./routes/newtonRaphson.js";
 import secantRouter from "./routes/secant.js";
 
+console.log("Starting backend server...");
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -41,4 +44,4 @@ app.post("/evaluate", (req, res) => {
   res.json({ y: closest[1] });
 });
 
-app.listen(8000, () => console.log("Server running on port 8000"));
+app.listen(8000, () =>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from '@mui/material';
 
 function HomePage() {
   return (
@@ -22,33 +23,50 @@ function HomePage() {
         </p>
         
         <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'row', gap: '15px', justifyContent: 'center' }}> {/* Added justifyContent: 'center' */}
-          <Link to="/algorithms" style={{
-            width: '195px', // Fixed width
-            height: '45px', // Fixed height
-            display: 'flex', // Use flex to center text
-            justifyContent: 'center', // Center text horizontally
-            alignItems: 'center', // Center text vertically
-            fontSize: '1.3em', 
-            backgroundColor: '#3C667E',
-            color: 'white',
-            textDecoration: 'none',
-            borderRadius: '50px', // Fully rounded
-            cursor: 'pointer'
-          }}>Explore</Link>
+          <Button
+            component={Link}
+            to="/algorithms"
+            state={{ showOneD: true }}
+            sx={{
+              width: '250px', // Adjusted width
+              height: '50px', // Adjusted height
+              fontSize: '1.3em', 
+              backgroundColor: '#3C667E',
+              color: 'white',
+              textDecoration: 'none',
+              textTransform: 'none', // Prevent all caps
+              borderRadius: '50px',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s ease', // Smooth transition for hover
+              '&:hover': {
+                backgroundColor: '#2A4B5C', // Darker shade on hover
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)', // Subtle shadow on hover
+              }
+            }}
+          >          One-Dimensional</Button>
           
-          <button style={{
-            width: '195px', // Fixed width
-            height: '45px', // Fixed height
-            display: 'flex', // Use flex to center text
-            justifyContent: 'center', // Center text horizontally
-            alignItems: 'center', // Center text vertically
-            fontSize: '1.3em',
-            backgroundColor: '#72A8C8',
-            color: 'white',
-            border: 'none',
-            borderRadius: '50px', // Fully rounded
-            cursor: 'pointer'
-          }}>Compare</button>
+          <Button
+            component={Link}
+            to="/algorithms"
+            state={{ showOneD: false }}
+            sx={{
+              width: '250px', // Adjusted width
+              height: '50px', // Adjusted height
+              fontSize: '1.3em',
+              backgroundColor: '#72A8C8',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50px',
+              cursor: 'pointer',
+              textDecoration: 'none', // Ensure no underline
+              textTransform: 'none', // Prevent all caps
+              transition: 'background-color 0.3s ease', // Smooth transition for hover
+              '&:hover': {
+                backgroundColor: '#5A8BA6', // Darker shade on hover
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)', // Subtle shadow on hover
+              }
+            }}
+          >Multi-Dimensional</Button>
         </div>
       </div>
       

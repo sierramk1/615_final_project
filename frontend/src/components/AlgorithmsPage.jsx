@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
-import OneDAlgorithmViewer from './OneDAlgorithmViewer.jsx'; // New component
-import GradientDescentComponent from './GradientDescentComponent.jsx';
-import NewtonsMethodComponent from './NewtonsMethodComponent.jsx';
+import OneDAlgorithmViewer from './OneDAlgorithmViewer.jsx';
+import MultiDimAlgorithmDisplay from './MultiDimAlgorithmViewer.jsx';
 
 function AlgorithmsPage() {
-  const [showOneDSection, setShowOneDSection] = useState(true); // State to toggle between 1D and Multi-D sections
+  const location = useLocation();
+  const [showOneDSection, setShowOneDSection] = useState(location.state?.showOneD !== undefined ? location.state.showOneD : true);
+
+  useEffect(() => {
+    if (location.state?.showOneD !== undefined) {
+      setShowOneDSection(location.state.showOneD);
+    }
+  }, [location.state]);
 
   return (
     <div style={{
@@ -66,7 +72,7 @@ function AlgorithmsPage() {
                 fontWeight: showOneDSection ? 'bold' : 'normal',
                 textDecoration: showOneDSection ? 'underline' : 'none',
                 textTransform: 'none',
-                minWidth: 'auto',
+                minWidth: '180px',
                 padding: '0',
                 '&:hover': {
                   backgroundColor: 'transparent',
@@ -82,9 +88,9 @@ function AlgorithmsPage() {
                 color: !showOneDSection ? '#3C667E' : '#666',
                 fontSize: '1.2em',
                 fontWeight: !showOneDSection ? 'bold' : 'normal',
-                textDecoration: !showOneDSection ? 'underline' : 'none',
+                textDecoration: 'none',
                 textTransform: 'none',
-                minWidth: 'auto',
+                minWidth: '180px',
                 padding: '0',
                 '&:hover': {
                   backgroundColor: 'transparent',
@@ -107,14 +113,7 @@ function AlgorithmsPage() {
           </>
         ) : (
           <>
-            {/* Multi-Dimensional Algorithms */}
-            <h2 style={{ marginTop: '20px', paddingBottom: '10px', fontSize: '2.5em' }}>Multi-Dimensional Algorithms</h2> 
-            <div id="gradient-descent-component"> 
-              <GradientDescentComponent />
-            </div>
-            <div id="newtons-method-component"> 
-              <NewtonsMethodComponent />
-            </div>
+          <MultiDimAlgorithmDisplay />
           </>
         )}
       </div>

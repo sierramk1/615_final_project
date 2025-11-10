@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { gradientDescent } from '../js/gradient_descent.js';
+import { gradientDescent } from '../../js/gradient_descent.js';
 import math from 'mathjs'; // Although used by the module, it's good practice to have it here.
 
 function GradientDescentComponent() {
