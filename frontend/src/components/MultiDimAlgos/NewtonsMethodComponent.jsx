@@ -50,7 +50,6 @@ function NewtonsMethodComponent() {
           scope.x = vars[0];
           scope.y = vars[1];
         }
-
         try {
           const result = math.evaluate(gradStr, scope);
           if (!Array.isArray(result)) throw new Error('Gradient must return an array');
@@ -82,27 +81,46 @@ function NewtonsMethodComponent() {
       };
 
 
-      const result = newtonsMethod(func, grad, hessian, initialGuess, 1e-6, 50);
-      if (!result?.path) {
-        alert("Newton's method failed. Check your function, gradient, and Hessian.");
-        return;
+      try {
+        const result = newtonsMethod(func, grad, hessian, initialGuess, 1e-6, 50);
+
+        if (!result?.path) {
+          alert("Newton's method failed. Check your function, gradient, and Hessian.");
+          setPath([]);
+          setConvergenceData([]);
+          setCurrentStep(0);
+          return;
+        }
+
+        setPath(result.path);
+        const newConvergenceData = result.path.map((point, i) => ({
+          iteration: i,
+          value: func(point),
+        }));
+        setConvergenceData(newConvergenceData);
+        setCurrentStep(0);
+
+      } catch (err) {
+        console.warn("Newton's method failed:", err);
+        setPath([]);
+        setConvergenceData([]);
+        setCurrentStep(0);
       }
-
-      setPath(result.path || []);
-      const newConvergenceData = (result.path || []).map((point, i) => ({
-        iteration: i,
-        value: func(point),
-      }));
-      setConvergenceData(newConvergenceData);
-      setCurrentStep(0);
-
     } catch (error) {
-      console.error(error);
+      console.error('Error parsing function, gradient, or Hessian:', error);
       alert('Error parsing function, gradient, or Hessian: ' + error.message);
+      setPath([]);
+      setConvergenceData([]);
+      setCurrentStep(0);
     }
   };
 
-  useEffect(() => handleOptimize(), [numDimensions]);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      handleOptimize();
+    }
+  }, [numDimensions]);
+
 
   useEffect(() => {
     if (isPlaying) {
@@ -139,9 +157,9 @@ function NewtonsMethodComponent() {
     }
   }
 
-  const pathX = numDimensions === 2 && path?.length ? path.slice(0, currentStep + 1).map(p => p[0]) : [];
-  const pathY = numDimensions === 2 && path?.length ? path.slice(0, currentStep + 1).map(p => p[1]) : [];
-  const pathZ = numDimensions === 2 && path?.length ? path.slice(0, currentStep + 1).map(p => plotFunc(p[0], p[1])) : [];
+  const pathX = path?.slice(0, currentStep + 1).map(p => p[0]) || [];
+  const pathY = path?.slice(0, currentStep + 1).map(p => p[1]) || [];
+  const pathZ = path?.slice(0, currentStep + 1).map(p => plotFunc(p[0], p[1])) || [];
 
   const plotData = numDimensions === 2 ? [
     { x, y, z, type: 'surface', colorscale: 'Viridis' },
