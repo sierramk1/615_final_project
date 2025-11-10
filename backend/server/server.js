@@ -44,4 +44,4 @@ app.post("/evaluate", (req, res) => {
   res.json({ y: closest[1] });
 });
 
-app.listen(8000, () =>
+app.listen(8000, () => console.log("Server running on port 8000"));
