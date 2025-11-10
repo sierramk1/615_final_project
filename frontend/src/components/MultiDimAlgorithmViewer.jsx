@@ -10,15 +10,18 @@ function MultiDimAlgorithmDisplay() {
 
   const handleSelectChange = (event) => {
     setSelectedAlgo(event.target.value);
+    console.log('Selected Algo:', event.target.value);
   };
 
   const handleOptimizationTypeChange = (event, newType) => {
     if (newType !== null) {
       setOptimizationType(newType);
+      console.log('Optimization Type:', newType);
     }
   };
 
   const renderSelectedAlgo = () => {
+    console.log('Rendering:', selectedAlgo);
     const props = { optimizationType }; // Data prop removed for now
     switch (selectedAlgo) {
       case 'gradientDescent':
