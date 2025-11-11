@@ -1,48 +1,53 @@
-/**
- * Finds a root of a function using the Secant method, yielding intermediate steps.
- * @param {function(number): number} f The objective function to find a root of.
- * @param {number} x0 The first initial guess.
- * @param {number} x1 The second initial guess.
- * @param {number} [tol=1e-10] The tolerance for convergence.
- * @param {number} [max_iter=100] The maximum number of iterations.
- * @yields {{x0: number, x1: number, x2: number, iter: number}} An object containing the two current points, the next guess, and iteration count.
- * @returns {void} The generator finishes when convergence is met or max_iter is reached.
- */
-function* secantGenerator(f, x0, x1, tol = 1e-10, max_iter = 100) {
-    let current_x0 = x0;
-    let current_x1 = x1;
+import * as math from 'mathjs';
+import { createInterpolatedFunction } from './utils.js';
 
-    // Check if initial guesses are already roots
-    if (Math.abs(f(current_x0)) < tol) {
-        yield { x0: current_x0, x1: current_x1, x2: current_x0, iter: 0 };
-        return;
-    }
-    if (Math.abs(f(current_x1)) < tol) {
-        yield { x0: current_x0, x1: current_x1, x2: current_x1, iter: 0 };
-        return;
-    }
+// Secant method implementation
+export const secant = (func, x0, x1, tol = 1e-5, maxIter = 100) => {
+    const steps = [];
+    const isStringFunc = typeof func === 'string';
+    let f_x0 = isStringFunc ? math.evaluate(func, {x: x0}) : func(x0);
+    let f_x1 = isStringFunc ? math.evaluate(func, {x: x1}) : func(x1);
+    let x2;
 
-    for (let i = 0; i < max_iter; i++) {
-        const f_x0 = f(current_x0);
-        const f_x1 = f(current_x1);
-
-        if (Math.abs(f_x1 - f_x0) < tol) {
-            throw new Error("Function values at the two points are too close.");
+    for (let i = 0; i < maxIter; i++) {
+        if (math.abs(f_x1 - f_x0) < 1e-15) {
+            // Avoid division by zero
+            steps.push({ x0, x1, x2: x1 });
+            return steps;
         }
 
-        const next_x = current_x1 - (f_x1 * (current_x1 - current_x0)) / (f_x1 - f_x0);
+        x2 = x1 - f_x1 * (x1 - x0) / (f_x1 - f_x0);
+        steps.push({ x0, x1, x2 });
 
-        yield { x0: current_x0, x1: current_x1, x2: next_x, iter: i + 1 };
-
-        if (Math.abs(next_x - current_x1) < tol) {
-            return; // Converged
+        if (math.abs(x2 - x1) < tol) {
+            return steps;
         }
 
-        current_x0 = current_x1;
-        current_x1 = next_x;
+        x0 = x1;
+        f_x0 = f_x1;
+        x1 = x2;
+        f_x1 = isStringFunc ? math.evaluate(func, {x: x1}) : func(x1);
     }
+    return steps; // Return the steps taken
+};
 
-    throw new Error(`Secant method did not converge in ${max_iter} iterations`);
-}
+export const solveSecant = (optimizationType, expression, initialGuess, data, tolerance, maxIterations) => {
+    if (optimizationType === 'function') {
+        if (!expression || !initialGuess) {
+            throw new Error('Expression and initial guess are required for function optimization.');
+        }
+        const { x0, x1 } = initialGuess;
+        return secant(expression, x0, x1, tolerance, maxIterations);
 
-module.exports = { secant: secantGenerator };
+    } else if (optimizationType === 'data') {
+        if (!data || !initialGuess) {
+            throw new Error('Data and initial guess are required for data optimization.');
+        }
+        const interpolatedFunc = createInterpolatedFunction(data);
+        const { x0, x1 } = initialGuess;
+        return secant(interpolatedFunc, x0, x1, tolerance, maxIterations);
+
+    } else {
+        throw new Error('Invalid optimization type.');
+    }
+};

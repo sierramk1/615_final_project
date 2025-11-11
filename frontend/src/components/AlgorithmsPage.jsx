@@ -70,7 +70,7 @@ function AlgorithmsPage() {
                 color: showOneDSection ? '#3C667E' : '#666',
                 fontSize: '1.2em',
                 fontWeight: showOneDSection ? 'bold' : 'normal',
-                textDecoration: showOneDSection ? 'underline' : 'none',
+                textDecoration: 'none',
                 textTransform: 'none',
                 minWidth: '180px',
                 padding: '0',

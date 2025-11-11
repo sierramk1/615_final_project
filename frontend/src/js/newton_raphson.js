@@ -1,42 +1,60 @@
-/**
- * Finds a root of a function using the Newton-Raphson method, yielding intermediate steps.
- * @param {function(number): number} f The objective function to find a root of.
- * @param {function(number): number} fp The first derivative of the objective function.
- * @param {number} x0 The initial guess.
- * @param {number} [tol=1e-10] The tolerance for convergence.
- * @param {number} [max_iter=100] The maximum number of iterations.
- * @yields {{x0: number, x1: number, iter: number}} An object containing the current guess, next guess, and iteration count.
- * @returns {void} The generator finishes when convergence is met or max_iter is reached.
- */
-function* newtonRaphsonGenerator(f, fp, x0, tol = 1e-10, max_iter = 100) {
-    let current_x = x0;
+import * as math from 'mathjs';
+import { createInterpolatedFunction } from './utils.js';
 
-    // Check if initial guess is already the root
-    if (Math.abs(f(current_x)) < tol) {
-        yield { x0: current_x, x1: current_x, iter: 0 };
-        return;
-    }
+// Newton-Raphson method implementation
+export const newtonRaphson = (func, initialGuess, tol = 1e-5, maxIter = 100) => {
+    const steps = [];
+    let x0 = initialGuess;
+    let x1;
+    
+    const isStringFunc = typeof func === 'string';
+    const derivative = isStringFunc ? math.derivative(func, 'x') : null;
 
-    for (let i = 0; i < max_iter; i++) {
-        const f_x = f(current_x);
-        const fp_x = fp(current_x);
-
-        if (Math.abs(fp_x) < tol) {
-            throw new Error("Derivative is too close to zero.");
+    for (let i = 0; i < maxIter; i++) {
+        const f_x0 = isStringFunc ? math.evaluate(func, {x: x0}) : func(x0);
+        
+        let df_x0;
+        if (isStringFunc) {
+            df_x0 = derivative.evaluate({x: x0});
+        } else {
+            // Numerical differentiation for interpolated function
+            const h = 1e-5;
+            df_x0 = (func(x0 + h) - func(x0 - h)) / (2 * h);
         }
 
-        const next_x = current_x - f_x / fp_x;
-
-        yield { x0: current_x, x1: next_x, iter: i + 1 };
-
-        if (Math.abs(next_x - current_x) < tol) {
-            return; // Converged
+        if (math.abs(df_x0) < 1e-15) {
+            // Avoid division by zero
+            steps.push({ x0, x1: x0 });
+            return steps;
         }
 
-        current_x = next_x;
+        x1 = x0 - f_x0 / df_x0;
+        steps.push({ x0, x1 });
+
+        if (math.abs(x1 - x0) < tol) {
+            return steps;
+        }
+
+        x0 = x1;
     }
+    return steps; // Return the steps taken
+};
 
-    throw new Error(`Newton-Raphson method did not converge in ${max_iter} iterations`);
-}
+export const solveNewtonRaphson = (optimizationType, expression, initialGuess, data, tolerance, maxIterations) => {
+    if (optimizationType === 'function') {
+        if (!expression || initialGuess === undefined) {
+            throw new Error('Expression and initial guess are required for function optimization.');
+        }
+        return newtonRaphson(expression, initialGuess, tolerance, maxIterations);
 
-module.exports = { newtonRaphson: newtonRaphsonGenerator };
+    } else if (optimizationType === 'data') {
+        if (!data || initialGuess === undefined) {
+            throw new Error('Data and initial guess are required for data optimization.');
+        }
+        const interpolatedFunc = createInterpolatedFunction(data);
+        return newtonRaphson(interpolatedFunc, initialGuess, tolerance, maxIterations);
+
+    } else {
+        throw new Error('Invalid optimization type.');
+    }
+};

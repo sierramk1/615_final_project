@@ -1,4 +1,4 @@
-const math = require("mathjs");
+import * as math from 'mathjs'; // Changed to ES module import
 
 /**
  * Performs multi-dimensional Newton's method to find the minimum of a function.
@@ -11,11 +11,13 @@ const math = require("mathjs");
  * @param {number} [tol=1e-10] The tolerance for convergence.
  * @param {number} [max_iter=5000] The maximum number of iterations.
  * @param {...any} args Additional arguments to pass to f, g, and h.
- * @returns {{xmin: number[], fmin: number, f_deriv: number[], Hessian: number[][], convergence: boolean, iter: number}}
+ * @returns {{xmin: number[], fmin: number, f_deriv: number[], Hessian: number[][], convergence: boolean, iter: number, path: number[][]}} // Added path to return
  */
-function newtonsMethod(f, g, h, x0, tol = 1e-10, max_iter = 5000, ...args) {
+export function newtonsMethod(f, g, h, x0, tol = 1e-10, max_iter = 5000, ...args) { // Changed to ES module export
+    const path = []; // To store the path for visualization
     let current_x = x0;
     let f0 = f(current_x, ...args);
+    path.push(current_x); // Add initial point to path
 
     for (let iter = 1; iter <= max_iter; iter++) {
         const g0 = g(current_x, ...args);
@@ -36,19 +38,23 @@ function newtonsMethod(f, g, h, x0, tol = 1e-10, max_iter = 5000, ...args) {
             throw new Error("Function diverged to infinity. Try a different initial value.");
         }
 
-        if (Math.abs(f1 - f0) <= tol * (Math.abs(f1) + Math.abs(f0))) {
+        // Check for convergence based on the change in x
+        if (math.norm(math.subtract(next_x, current_x)) < tol) { // Changed convergence criteria
+            path.push(next_x);
             return {
                 xmin: next_x,
                 fmin: f1,
                 f_deriv: g(next_x, ...args),
                 Hessian: h(next_x, ...args),
                 convergence: true,
-                iter: iter
+                iter: iter,
+                path: path
             };
         }
         
         current_x = next_x;
         f0 = f1;
+        path.push(current_x); // Add current point to path
     }
 
     return {
@@ -57,8 +63,7 @@ function newtonsMethod(f, g, h, x0, tol = 1e-10, max_iter = 5000, ...args) {
         f_deriv: g(current_x, ...args),
         Hessian: h(current_x, ...args),
         convergence: false,
-        iter: max_iter
+        iter: max_iter,
+        path: path
     };
 }
-
-module.exports = { newtonsMethod };

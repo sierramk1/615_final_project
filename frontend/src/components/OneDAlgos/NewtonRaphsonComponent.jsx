@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { TextField, Button, Alert, Typography, Box, Grid } from "@mui/material";
 import GraphWithControls from "../common/GraphWithControls.jsx";
-import Spline from 'cubic-spline';
 import * as math from 'mathjs';
+import { solveNewtonRaphson } from '../../js/newton_raphson.js';
+import { createInterpolatedFunction } from '../../js/utils.js';
 
 function NewtonRaphsonComponent({ optimizationType, data }) {
   // Input states
@@ -46,42 +47,22 @@ function NewtonRaphsonComponent({ optimizationType, data }) {
     const tol = parseFloat(tolerance);
     const maxIter = parseInt(maxIterations);
 
-    const payload = {
-      optimizationType,
-      initialGuess: x0,
-      tolerance: tol,
-      maxIterations: maxIter,
-    };
-
-    if (optimizationType === 'function') {
-      payload.expression = funcString;
-    } else if (optimizationType === 'data') {
-      if (!data) {
-        setError("Please upload a data file.");
-        return;
-      }
-      payload.data = data;
-    }
-
     try {
-      const response = await fetch('http://localhost:8000/api/optimize/newton-raphson', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      // Call the client-side solveNewtonRaphson function
+      const resultSteps = solveNewtonRaphson(
+        optimizationType,
+        funcString, // expression
+        x0,          // initialGuess
+        data,        // data (will be used if optimizationType is 'data')
+        tol,         // tolerance
+        maxIter      // maxIterations
+      );
 
-      const resData = await response.json();
+      setAnimationSteps(resultSteps);
+      setResult(resultSteps[resultSteps.length - 1].x1);
 
-      if (!response.ok) {
-        setError(resData.error || 'An error occurred.');
-      } else {
-        setAnimationSteps(resData.steps);
-        setResult(resData.steps[resData.steps.length - 1].x1);
-      }
     } catch (err) {
-      setError('Failed to connect to the server.');
+      setError(err.message || 'An error occurred during optimization.');
     }
   };
 
@@ -94,10 +75,9 @@ function NewtonRaphsonComponent({ optimizationType, data }) {
                 return NaN;
             }
         } else if (optimizationType === 'data' && data) {
-            const xs = data.map(p => p.x);
-            const ys = data.map(p => p.y);
-            const spline = new Spline(xs, ys);
-            return spline.at(x);
+            // Use the client-side createInterpolatedFunction
+            const interpolatedFunc = createInterpolatedFunction(data);
+            return interpolatedFunc(x);
         }
         return NaN;
     },

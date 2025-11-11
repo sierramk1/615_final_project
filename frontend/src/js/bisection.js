@@ -1,46 +1,48 @@
-/**
- * Finds a root of a function using the bisection method, yielding intermediate steps.
- * @param {function(number): number} f The objective function to find a root of.
- * @param {number} a The first endpoint of the interval, where f(a) and f(b) have opposite signs.
- * @param {number} b The second endpoint of the interval.
- * @param {number} [tol=1e-10] The tolerance for convergence.
- * @param {number} [max_iter=100] The maximum number of iterations.
- * @yields {{a: number, b: number, mid: number, f_mid: number, iter: number}} An object containing the current interval, midpoint, and iteration count.
- * @returns {void} The generator finishes when convergence is met or max_iter is reached.
- */
-function* bisectionGenerator(f, a, b, tol = 1e-10, max_iter = 100) {
-    let f_a = f(a);
-    let f_b = f(b);
+import * as math from 'mathjs';
+import { createInterpolatedFunction } from './utils.js'; // Import from the new frontend utils.js
 
-    if (f_a * f_b >= 0) {
-        throw new Error("f(a) and f(b) must have opposite signs");
-    }
-
-    let current_a = a;
-    let current_b = b;
-
-    for (let i = 0; i < max_iter; i++) {
-        const mid = (current_a + current_b) / 2.0;
-        const f_mid = f(mid);
-
-        yield { a: current_a, b: current_b, mid: mid, f_mid: f_mid, iter: i + 1 };
-
-        if (Math.abs(f_mid) < tol || Math.abs(current_b - current_a) < tol) {
-            return; // Converged
+// Bisection method implementation
+export const bisection = (func, a, b, tol = 1e-5, maxIter = 100) => {
+    const steps = [];
+    let c;
+    for (let i = 0; i < maxIter; i++) {
+        c = (a + b) / 2;
+        steps.push({ a, b, c });
+        if (b - a < tol) {
+            return steps;
         }
+        // The func can be a string expression or a direct function
+        const fa = typeof func === 'string' ? math.evaluate(func, {x: a}) : func(a);
+        const fc = typeof func === 'string' ? math.evaluate(func, {x: c}) : func(c);
 
-        if (f(current_a) * f_mid < 0) {
-            current_b = mid;
+        if (fa * fc < 0) {
+            b = c;
         } else {
-            current_a = mid;
-            f_a = f_mid; // Update f_a to avoid re-evaluating f(current_a)
+            a = c;
         }
     }
+    return steps;
+};
 
-    // If max_iter is reached without convergence, yield the final state and then return
-    const final_mid = (current_a + current_b) / 2.0;
-    yield { a: current_a, b: current_b, mid: final_mid, f_mid: f(final_mid), iter: max_iter };
-    throw new Error(`Bisection method did not converge in ${max_iter} iterations`);
-}
+// This function will be called from the React component (e.g., BisectionComponent.jsx)
+// It encapsulates the logic for handling 'function' and 'data' optimization types
+export const solveBisection = (optimizationType, expression, initialGuess, data, tolerance, maxIterations) => {
+    if (optimizationType === 'function') {
+        if (!expression || !initialGuess) {
+            throw new Error('Expression and initial guess are required for function optimization.');
+        }
+        const { a, b } = initialGuess;
+        return bisection(expression, a, b, tolerance, maxIterations);
 
-module.exports = { bisection: bisectionGenerator };
+    } else if (optimizationType === 'data') {
+        if (!data || !initialGuess) {
+            throw new Error('Data and initial guess are required for data optimization.');
+        }
+        const interpolatedFunc = createInterpolatedFunction(data);
+        const { a, b } = initialGuess;
+        return bisection(interpolatedFunc, a, b, tolerance, maxIterations);
+
+    } else {
+        throw new Error('Invalid optimization type.');
+    }
+};

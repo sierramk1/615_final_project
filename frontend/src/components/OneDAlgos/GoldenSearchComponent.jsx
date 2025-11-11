@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { TextField, Button, Alert, Typography, Box, Grid } from "@mui/material";
 import GraphWithControls from "../common/GraphWithControls.jsx";
-import Spline from 'cubic-spline';
 import * as math from 'mathjs';
+import { solveGoldenSearch } from '../../js/golden_search.js';
+import { createInterpolatedFunction } from '../../js/utils.js';
 
 function GoldenSearchComponent({ optimizationType, data }) {
   // Input states
@@ -48,44 +49,24 @@ function GoldenSearchComponent({ optimizationType, data }) {
     const tol = parseFloat(tolerance);
     const maxIter = parseInt(maxIterations);
 
-    const payload = {
-      optimizationType,
-      initialGuess: { a, b },
-      tolerance: tol,
-      maxIterations: maxIter,
-    };
-
-    if (optimizationType === 'function') {
-      payload.expression = funcString;
-    } else if (optimizationType === 'data') {
-      if (!data) {
-        setError("Please upload a data file.");
-        return;
-      }
-      payload.data = data;
-    }
-
     try {
-      const response = await fetch('http://localhost:8000/api/optimize/golden-search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      // Call the client-side solveGoldenSearch function
+      const resultSteps = solveGoldenSearch(
+        optimizationType,
+        funcString, // expression
+        { a, b },    // initialGuess
+        data,        // data (will be used if optimizationType is 'data')
+        tol,         // tolerance
+        maxIter      // maxIterations
+      );
 
-      const resData = await response.json();
+      setAnimationSteps(resultSteps);
+      const lastStep = resultSteps[resultSteps.length - 1];
+      const finalResult = myFunction(lastStep.b) < myFunction(lastStep.d) ? lastStep.b : lastStep.d;
+      setResult(finalResult);
 
-      if (!response.ok) {
-        setError(resData.error || 'An error occurred.');
-      } else {
-        setAnimationSteps(resData.steps);
-        const lastStep = resData.steps[resData.steps.length - 1];
-        const finalResult = myFunction(lastStep.b) < myFunction(lastStep.d) ? lastStep.b : lastStep.d;
-        setResult(finalResult);
-      }
     } catch (err) {
-      setError('Failed to connect to the server.');
+      setError(err.message || 'An error occurred during optimization.');
     }
   };
 
@@ -98,10 +79,9 @@ function GoldenSearchComponent({ optimizationType, data }) {
                 return NaN;
             }
         } else if (optimizationType === 'data' && data) {
-            const xs = data.map(p => p.x);
-            const ys = data.map(p => p.y);
-            const spline = new Spline(xs, ys);
-            return spline.at(x);
+            // Use the client-side createInterpolatedFunction
+            const interpolatedFunc = createInterpolatedFunction(data);
+            return interpolatedFunc(x);
         }
         return NaN;
     },
