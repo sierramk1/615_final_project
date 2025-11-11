@@ -27,7 +27,7 @@ export function newtonsMethod(f, g, h, x0, tol = 1e-10, max_iter = 5000, ...args
         try {
             const h0_inv = math.inv(h0);
             const step = math.multiply(h0_inv, g0);
-            var next_x = math.subtract(current_x, step);
+            var next_x = math.subtract(current_x, step).toArray();
         } catch (e) {
             throw new Error(`Matrix inversion failed. The Hessian may be singular. Error: ${e.message}`);
         }

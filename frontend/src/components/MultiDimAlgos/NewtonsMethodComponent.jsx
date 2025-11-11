@@ -1,7 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { newtonsMethod } from '../../js/newtons_method.js';
 import GraphWithControls from '../common/GraphWithControls.jsx';
-import { TextField, Button, Box, Grid, Typography } from '@mui/material';
+import {
+  TextField,
+  Button,
+  Box,
+  Grid,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
+} from '@mui/material';
 import * as math from 'mathjs';
 import Plot from 'react-plotly.js';
 
@@ -17,6 +30,8 @@ function NewtonsMethodComponent() {
   const [showGraph, setShowGraph] = useState(true);
   const [numDimensions, setNumDimensions] = useState(2);
   const [convergenceData, setConvergenceData] = useState([]);
+  const [iterationCount, setIterationCount] = useState(0);
+  const [finalMinimum, setFinalMinimum] = useState(null);
 
   const handleDimChange = (e) => {
     const newDim = parseInt(e.target.value, 10);
@@ -52,11 +67,10 @@ function NewtonsMethodComponent() {
         }
         try {
           const result = math.evaluate(gradStr, scope);
-          if (!Array.isArray(result)) throw new Error('Gradient must return an array');
           return result;
         } catch (err) {
           console.error('Error evaluating gradient:', err);
-          return Array(numDimensions).fill(0); // fallback
+          throw new Error(`Error in gradient expression: ${err.message}`);
         }
       };
 
@@ -72,11 +86,10 @@ function NewtonsMethodComponent() {
 
         try {
           const result = math.evaluate(hessianStr, scope);
-          if (!Array.isArray(result)) throw new Error('Hessian must return a 2D array');
           return result;
         } catch (err) {
           console.error('Error evaluating Hessian:', err);
-          return Array(numDimensions).fill(0).map(() => Array(numDimensions).fill(0)); // fallback
+          throw new Error(`Error in Hessian expression: ${err.message}`);
         }
       };
 
@@ -89,10 +102,14 @@ function NewtonsMethodComponent() {
           setPath([]);
           setConvergenceData([]);
           setCurrentStep(0);
+          setIterationCount(0);
+          setFinalMinimum(null);
           return;
         }
 
         setPath(result.path);
+        setIterationCount(result.iter);
+        setFinalMinimum(result.xmin);
         const newConvergenceData = result.path.map((point, i) => ({
           iteration: i,
           value: func(point),
@@ -102,9 +119,12 @@ function NewtonsMethodComponent() {
 
       } catch (err) {
         console.warn("Newton's method failed:", err);
+        alert("Newton's method failed: " + err.message);
         setPath([]);
         setConvergenceData([]);
         setCurrentStep(0);
+        setIterationCount(0);
+        setFinalMinimum(null);
       }
     } catch (error) {
       console.error('Error parsing function, gradient, or Hessian:', error);
@@ -112,14 +132,16 @@ function NewtonsMethodComponent() {
       setPath([]);
       setConvergenceData([]);
       setCurrentStep(0);
+      setIterationCount(0);
+      setFinalMinimum(null);
     }
   };
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      handleOptimize();
-    }
-  }, [numDimensions]);
+  // useEffect(() => {
+  //   if (typeof window !== "undefined") {
+  //     handleOptimize();
+  //   }
+  // }, [numDimensions]);
 
 
   useEffect(() => {
@@ -174,7 +196,7 @@ function NewtonsMethodComponent() {
   };
 
   return (
-    <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ p: 2, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
         {/* Controls */}
         <Grid item xs={12} md={4}>
@@ -195,10 +217,42 @@ function NewtonsMethodComponent() {
             Optimize
           </Button>
           {path.length > 0 && (
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              Iteration: {currentStep > 0 ? currentStep : 0} / {path.length -1}
-            </Typography>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="h6">
+                <strong>Minimum:</strong> <strong>[{finalMinimum?.map(v => v.toFixed(4)).join(', ')}]</strong>
+              </Typography>
+              <Typography variant="body1">
+                Iteration: {currentStep > 0 ? currentStep : 0} / {path.length - 1}
+              </Typography>
+            </Box>
           )}
+          {path.length > 0 && (
+            <Box sx={{ mt: 2, overflowX: 'auto', bgcolor: 'background.paper' }}>
+              <TableContainer sx={{ maxHeight: 300 }}>
+                <Table stickyHeader aria-label="sticky table">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Iteration</TableCell>
+                      {Array.from({ length: numDimensions }, (_, i) => (
+                        <TableCell key={i}>x{i + 1}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {path.map((point, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{index}</TableCell>
+                        {point.map((coord, i) => (
+                          <TableCell key={i}>{coord.toFixed(4)}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
+          <Box sx={{ height: '100px' }} />
         </Grid>
 
         {/* Graph */}
