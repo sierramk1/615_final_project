@@ -14,9 +14,10 @@ import {
   TableHead,
   TableRow,
   Paper,
-  // Switch, // Removed
-  // FormControlLabel // Removed
+  // Tooltip, // Removed
+  // IconButton // Removed
 } from '@mui/material';
+// import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'; // Removed
 import * as math from 'mathjs';
 import Plot from 'react-plotly.js';
 
@@ -38,6 +39,7 @@ function GradientDescentComponent() {
   const [convergenceData, setConvergenceData] = useState([]);
   const [iterationCount, setIterationCount] = useState(0);
   const [finalMinimum, setFinalMinimum] = useState(null);
+  // const [isZoomedIn, setIsZoomedIn] = useState(true); // Removed
 
   const handleDimChange = (e) => {
     const newDim = parseInt(e.target.value, 10);
@@ -82,11 +84,25 @@ function GradientDescentComponent() {
         }
       };
 
+      // --- Validation Logic Integrated ---
+      // Test initial guess with func and grad to catch immediate errors
+      try {
+        const initialFuncVal = func(initialGuess);
+        const initialGradVal = grad(initialGuess);
+
+        if (!isFinite(initialFuncVal) || initialGradVal.some(isNaN) || initialGradVal.some(v => !isFinite(v))) {
+          alert("Initial function or gradient evaluation resulted in non-finite values (NaN/Infinity). Please check your function, gradient, and initial guess.");
+          return;
+        }
+      } catch (validationError) {
+        alert(`Error during initial function/gradient validation: ${validationError.message}. Please check your function and gradient strings.`);
+        return;
+      }
+      // --- End Validation Logic ---
+
       try {
         // Pass false for update_step_size to disable internal step size updates
         const result = gradientDescent(func, grad, initialGuess, learningRate, false, tolerance, maxIterations);
-        console.log("Gradient Descent Result:", result); // Log entire result object
-
         if (!result?.path || result.path.length === 0) {
           alert("Gradient Descent failed or returned an empty path. Check your function and gradient.");
           setPath([]);
@@ -98,7 +114,6 @@ function GradientDescentComponent() {
         }
 
         setPath(result.path);
-        console.log("Gradient Descent Path:", result.path); // Debugging line
         setIterationCount(result.iter);
         setFinalMinimum(result.xmin);
         const newConvergenceData = result.path.map((point, i) => ({
@@ -140,10 +155,14 @@ function GradientDescentComponent() {
   }, [isPlaying, path]);
 
   const plotFunc = (x, y) => {
+    if (!funcStr) { // If function string is empty, return 0 to avoid errors
+      return 0;
+    }
     try {
       return math.evaluate(funcStr, { x, y });
     } catch (e) {
-      return NaN;
+      // If evaluation fails, return 0 to avoid errors
+      return 0;
     }
   };
 
@@ -187,8 +206,8 @@ function GradientDescentComponent() {
             Gradient Descent is a first-order iterative optimization algorithm for finding the local minimum of a differentiable function. It takes steps proportional to the negative of the gradient of the function at the current point. The learning rate (step size) is crucial for convergence.
           </Typography>
           <TextField label="Number of Dimensions" type="number" value={numDimensions} onChange={handleDimChange} fullWidth margin="normal" />
-          <TextField label="Function f(x1, x2, ...)" value={funcStr} onChange={(e) => setFuncStr(e.target.value)} fullWidth margin="normal" />
-          <TextField label="Gradient g(x1, x2, ...)" value={gradStr} onChange={(e) => setGradStr(e.target.value)} fullWidth margin="normal" />
+          <TextField label="Function f(x1, x2, ...)" value={funcStr} onChange={(e) => setFuncStr(e.target.value)} fullWidth margin="normal" placeholder="(1 - x)^2 + 100 * (y - x^2)^2" />
+          <TextField label="Gradient g(x1, x2, ...)" value={gradStr} onChange={(e) => setGradStr(e.target.value)} fullWidth margin="normal" placeholder="[-2 * (1 - x) - 400 * x * (y - x^2), 200 * (y - x^2)]" />
           <TextField label="Initial Guess (comma-separated)" value={initialGuessStr} onChange={(e) => setInitialGuessStr(e.target.value)} fullWidth margin="normal" />
           <TextField label="Learning Rate (alpha)" type="number" value={learningRate} onChange={(e) => setLearningRate(Number(e.target.value))} fullWidth margin="normal" inputProps={{ step: "0.0001" }} />
           <TextField label="Tolerance" type="number" value={tolerance} onChange={(e) => setTolerance(Number(e.target.value))} fullWidth margin="normal" inputProps={{ step: "1e-7" }} />

@@ -13,10 +13,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
+  // Tooltip, // Removed
+  // IconButton // Removed
 } from '@mui/material';
 import * as math from 'mathjs';
 import Plot from 'react-plotly.js';
+// import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'; // Removed
 
 function NewtonsMethodComponent() {
   const [funcStr, setFuncStr] = useState('(1 - x)^2 + 100 * (y - x^2)^2');
@@ -156,10 +159,14 @@ function NewtonsMethodComponent() {
   }, [isPlaying, path]);
 
   const plotFunc = (x, y) => {
+    if (!funcStr) { // If function string is empty, return 0 to avoid errors
+      return 0;
+    }
     try {
       return math.evaluate(funcStr, { x, y });
     } catch (e) {
-      return NaN;
+      // If evaluation fails, return 0 to avoid errors
+      return 0;
     }
   };
 
@@ -184,7 +191,7 @@ function NewtonsMethodComponent() {
   const pathZ = path?.slice(0, currentStep + 1).map(p => plotFunc(p[0], p[1])) || [];
 
   const plotData = numDimensions === 2 ? [
-    { x, y, z, type: 'surface', colorscale: 'Viridis' },
+    { x, y, z, type: 'surface', colorscale: 'Viridis', opacity: 0.7 },
     { x: pathX, y: pathY, z: pathZ, type: 'scatter3d', mode: 'lines+markers', line: { color: 'red', width: 4 }, marker: { size: 4, color: 'white' } }
   ] : [];
 
@@ -203,9 +210,9 @@ function NewtonsMethodComponent() {
             Newton’s method leverages both first- and second-order derivatives — the gradient and the Hessian — to iteratively approximate the minimum of a function. Its quadratic convergence makes it fast, but the cost of computing and inverting the Hessian can be high for large problems.
           </Typography>
           <TextField label="Number of Dimensions" type="number" value={numDimensions} onChange={handleDimChange} fullWidth margin="normal" />
-          <TextField label="Function f(x1, x2, ...)" value={funcStr} onChange={(e) => setFuncStr(e.target.value)} fullWidth margin="normal" />
-          <TextField label="Gradient g(x1, x2, ...)" value={gradStr} onChange={(e) => setGradStr(e.target.value)} fullWidth margin="normal" />
-          <TextField label="Hessian H(x1, x2, ...)" value={hessianStr} onChange={(e) => setHessianStr(e.target.value)} fullWidth margin="normal" />
+          <TextField label="Function f(x1, x2, ...)" value={funcStr} onChange={(e) => setFuncStr(e.target.value)} fullWidth margin="normal" placeholder="(1 - x)^2 + 100 * (y - x^2)^2" />
+          <TextField label="Gradient g(x1, x2, ...)" value={gradStr} onChange={(e) => setGradStr(e.target.value)} fullWidth margin="normal" placeholder="[-2 + 2*x - 400*x*y + 400*x^3, 200*y - 200*x^2]" />
+          <TextField label="Hessian H(x1, x2, ...)" value={hessianStr} onChange={(e) => setHessianStr(e.target.value)} fullWidth margin="normal" placeholder="[[2 - 400*y + 1200*x^2, -400*x], [-400*x, 200]]" />
           <TextField label="Initial Guess" value={initialGuessStr} onChange={(e) => setInitialGuessStr(e.target.value)} fullWidth margin="normal" />
           <Button 
             onClick={handleOptimize} 
