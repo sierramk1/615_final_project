@@ -238,14 +238,26 @@ function NewtonsMethodComponent() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {path.map((point, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{index}</TableCell>
-                        {point.map((coord, i) => (
-                          <TableCell key={i}>{coord.toFixed(4)}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
+                    {path.map((point, index) => {
+                      // Sampling logic for table display
+                      const isFirstTen = index < 10;
+                      const isEveryTenthUpToHundred = index >= 10 && index < 100 && index % 10 === 0;
+                      const isEveryHundredthUpToThousand = index >= 100 && index < 1000 && index % 100 === 0;
+                      const isEveryThousandthAfterThousand = index >= 1000 && index % 1000 === 0;
+                      const isLastIteration = index === path.length - 1;
+
+                      if (isFirstTen || isEveryTenthUpToHundred || isEveryHundredthUpToThousand || isEveryThousandthAfterThousand || isLastIteration) {
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>{index}</TableCell>
+                            {point.map((coord, i) => (
+                              <TableCell key={i}>{coord.toFixed(4)}</TableCell>
+                            ))}
+                          </TableRow>
+                        );
+                      }
+                      return null;
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>

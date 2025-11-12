@@ -12,13 +12,14 @@ const math = require("mathjs");
  * @param {number} [tol=1e-10] The tolerance for convergence.
  * @param {number} [max_iter=5000] The maximum number of iterations.
  * @param {...any} args Additional arguments to pass to f and g.
- * @returns {{xmin: number[], fmin: number, step_size: number, convergence: boolean, iter: number}}
+ * @returns {{xmin: number[], fmin: number, step_size: number, convergence: boolean, iter: number, path: number[][]}}
  */
 function gradientDescent(f, g, x0, step_size = 0.0001, update_step_size = true, tol = 1e-10, max_iter = 5000, ...args) {
     let current_x = x0;
     let f0 = f(current_x, ...args);
     let g0 = g(current_x, ...args);
     let current_step_size = step_size;
+    const path = [x0]; // Initialize path
 
     for (let iter = 1; iter <= max_iter; iter++) {
         const next_x = math.subtract(current_x, math.multiply(current_step_size, g0));
@@ -29,7 +30,8 @@ function gradientDescent(f, g, x0, step_size = 0.0001, update_step_size = true, 
         }
 
         if (Math.abs(f1 - f0) <= tol * (Math.abs(f1) + Math.abs(f0))) {
-            return { xmin: next_x, fmin: f1, step_size: current_step_size, convergence: true, iter: iter };
+            path.push(next_x); // Add final point to path
+            return { xmin: next_x, fmin: f1, step_size: current_step_size, convergence: true, iter: iter, path: path };
         }
 
         const g1 = g(next_x, ...args);
@@ -46,9 +48,10 @@ function gradientDescent(f, g, x0, step_size = 0.0001, update_step_size = true, 
         current_x = next_x;
         f0 = f1;
         g0 = g1;
+        path.push(current_x); // Add current point to path
     }
 
-    return { xmin: current_x, fmin: f0, step_size: current_step_size, convergence: false, iter: max_iter };
+    return { xmin: current_x, fmin: f0, step_size: current_step_size, convergence: false, iter: max_iter, path: path };
 }
 
 module.exports = { gradientDescent };
