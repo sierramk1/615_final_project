@@ -191,8 +191,7 @@ function NewtonsMethodComponent() {
   const layout = {
     title: "Newton's Method Path",
     scene: { xaxis: { title: 'x' }, yaxis: { title: 'y' }, zaxis: { title: 'f(x, y)' } },
-    width: 800,
-    height: 600,
+    autosize: true,
   };
 
   return (
