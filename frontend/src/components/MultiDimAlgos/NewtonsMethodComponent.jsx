@@ -140,6 +140,18 @@ function NewtonsMethodComponent() {
 
   useEffect(() => {
     if (numDimensions > 2) {
+      // Check if fixedDimValues is ready for the current dimensions
+      let ready = true;
+      for (let i = 0; i < numDimensions; i++) {
+        if (i !== xAxisDim && i !== yAxisDim) {
+          if (fixedDimValues[i] === undefined) {
+            ready = false;
+            break;
+          }
+        }
+      }
+      if (!ready) return; // Wait for fixedDimValues to be updated
+      
       const x_min = path.length > 1 ? Math.min(...path.map(p => p[xAxisDim])) - 1 : -5;
       const x_max = path.length > 1 ? Math.max(...path.map(p => p[xAxisDim])) + 1 : 5;
       const y_min = path.length > 1 ? Math.min(...path.map(p => p[yAxisDim])) - 1 : -5;
@@ -329,7 +341,7 @@ function NewtonsMethodComponent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
       <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
         {/* Controls */}
         <Grid item xs={12} md={4}>

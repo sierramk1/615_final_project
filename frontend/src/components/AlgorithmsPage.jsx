@@ -105,7 +105,7 @@ function AlgorithmsPage() {
       </AppBar>
 
       {/* --- Algorithm Content --- */}
-      <div style={{ padding: '0px', height: 'calc(100vh - 77px)' }}> 
+      <div style={{ padding: '0px', minHeight: 'calc(100vh - 77px)' }}> 
         {showOneDSection ? (
           <>
             {/* Render the new OneDAlgorithmViewer component */}
