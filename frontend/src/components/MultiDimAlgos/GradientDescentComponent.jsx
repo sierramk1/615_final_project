@@ -257,7 +257,15 @@ function GradientDescentComponent() {
   useEffect(() => {
     if (isPlaying) {
       intervalRef.current = setInterval(() => {
-        setCurrentStep(prev => (prev < path.length - 1 ? prev + 1 : prev));
+        setCurrentStep(prev => {
+          if (prev < path.length - 1) {
+            return prev + 1;
+          } else {
+            clearInterval(intervalRef.current);
+            setIsPlaying(false);
+            return prev;
+          }
+        });
       }, 200);
     } else {
       clearInterval(intervalRef.current);
@@ -324,9 +332,17 @@ function GradientDescentComponent() {
           <TextField label="Tolerance" type="number" value={tolerance} onChange={(e) => setTolerance(Number(e.target.value))} fullWidth margin="normal" inputProps={{ step: "1e-7" }} />
           <TextField label="Max Iterations" type="number" value={maxIterations} onChange={(e) => setMaxIterations(Number(e.target.value))} fullWidth margin="normal" />
           {/* Removed Armijo Line Search */}
+          <Button 
+            onClick={handleOptimize} 
+            variant="contained" 
+            fullWidth 
+            sx={{ mt: 2, backgroundColor: '#72A8C8', '&:hover': { backgroundColor: '#5a8fa8' } }}
+          >
+            Optimize
+          </Button>
           {numDimensions > 2 && (
             <Box sx={{ mt: 2 }}>
-              <Typography variant="h6">Slice Controls</Typography>
+              <Typography variant="h6">Cross-Section Controls</Typography>
               <FormControl fullWidth margin="normal">
                 <InputLabel>X-Axis</InputLabel>
                 <Select
@@ -375,14 +391,6 @@ function GradientDescentComponent() {
               ))}
             </Box>
           )}
-          <Button 
-            onClick={handleOptimize} 
-            variant="contained" 
-            fullWidth 
-            sx={{ mt: 2, backgroundColor: '#72A8C8', '&:hover': { backgroundColor: '#5a8fa8' } }}
-          >
-            Optimize
-          </Button>
           {path.length > 0 && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="h6">

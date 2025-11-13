@@ -269,7 +269,15 @@ function NewtonsMethodComponent() {
   useEffect(() => {
     if (isPlaying) {
       intervalRef.current = setInterval(() => {
-        setCurrentStep(prev => (prev < path.length - 1 ? prev + 1 : prev));
+        setCurrentStep(prev => {
+          if (prev < path.length - 1) {
+            return prev + 1;
+          } else {
+            clearInterval(intervalRef.current);
+            setIsPlaying(false);
+            return prev;
+          }
+        });
       }, 100);
     } else {
       clearInterval(intervalRef.current);
@@ -333,9 +341,17 @@ function NewtonsMethodComponent() {
           <TextField label="Gradient g(x1, x2, ...)" value={gradStr} onChange={(e) => setGradStr(e.target.value)} fullWidth margin="normal" placeholder="[-2 + 2*x - 400*x*y + 400*x^3, 200*y - 200*x^2]" />
           <TextField label="Hessian H(x1, x2, ...)" value={hessianStr} onChange={(e) => setHessianStr(e.target.value)} fullWidth margin="normal" placeholder="[[2 - 400*y + 1200*x^2, -400*x], [-400*x, 200]]" />
           <TextField label="Initial Guess" value={initialGuessStr} onChange={(e) => setInitialGuessStr(e.target.value)} fullWidth margin="normal" />
+          <Button 
+            onClick={handleOptimize} 
+            variant="contained" 
+            fullWidth 
+            sx={{ mt: 2, backgroundColor: '#72A8C8', '&:hover': { backgroundColor: '#5a8fa8' } }}
+          >
+            Optimize
+          </Button>
           {numDimensions > 2 && (
             <Box sx={{ mt: 2 }}>
-              <Typography variant="h6">Slice Controls</Typography>
+              <Typography variant="h6">Cross-Section Controls</Typography>
               <FormControl fullWidth margin="normal">
                 <InputLabel>X-Axis</InputLabel>
                 <Select
@@ -384,14 +400,6 @@ function NewtonsMethodComponent() {
               ))}
             </Box>
           )}
-          <Button 
-            onClick={handleOptimize} 
-            variant="contained" 
-            fullWidth 
-            sx={{ mt: 2, backgroundColor: '#72A8C8', '&:hover': { backgroundColor: '#5a8fa8' } }}
-          >
-            Optimize
-          </Button>
           {path.length > 0 && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="h6">
