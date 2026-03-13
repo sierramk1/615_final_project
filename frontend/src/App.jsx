@@ -8,6 +8,8 @@ import BisectionPage from './components/OneDAlgos/BisectionPage.jsx';
 import GoldenSearchPage from './components/OneDAlgos/GoldenSearchPage.jsx';
 import NewtonRaphsonPage from './components/OneDAlgos/NewtonRaphsonPage.jsx';
 import SecantPage from './components/OneDAlgos/SecantPage.jsx';
+import GradientDescentPage from './components/MultiDimAlgos/GradientDescentPage.jsx';
+import NewtonsMethodPage from './components/MultiDimAlgos/NewtonsMethodPage.jsx';
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
       <Route path="/one-dimensional/newton-raphson" element={<NewtonRaphsonPage />} />
       <Route path="/one-dimensional/secant" element={<SecantPage />} />
       <Route path="/multi-dimensional" element={<MultiDAlgorithmsPage />} />
+      <Route path="/multi-dimensional-algorithms/gradient-descent" element={<GradientDescentPage />} />
+      <Route path="/multi-dimensional-algorithms/newtons-method" element={<NewtonsMethodPage />} />
       <Route path="/gen-ai-guide" element={<BlogPage />} />
     </Routes>
   );

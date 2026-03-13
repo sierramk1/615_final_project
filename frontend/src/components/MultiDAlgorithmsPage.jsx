@@ -1,14 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
-import MultiDimAlgorithmViewer from './MultiDimAlgorithmViewer.jsx';
+import { AppBar, Toolbar, Typography, Button, Box, Card, CardContent, CardActions, Grid } from '@mui/material';
+import multiDAlgorithmsData from './MultiDimAlgos/multiDAlgorithmsData'; // Import the data
 
 function MultiDAlgorithmsPage() {
   return (
     <div style={{
       padding: '0px', 
       backgroundColor: '#F4F2EF', // Main content area background color
-      fontFamily: 'Roboto, Arial, sans-serif' 
+      fontFamily: 'Roboto, Arial, sans-serif',
+      minHeight: '100vh'
     }}>
       {/* --- TOP HEADER AND NAVIGATION --- */}
       <AppBar 
@@ -24,7 +25,7 @@ function MultiDAlgorithmsPage() {
           {/* OptiLearn as a Link to Home */}
           <Link 
             to="/" 
-            style={{ 
+            style={{
               textDecoration: 'none',
               display: 'flex',
               alignItems: 'center'
@@ -116,8 +117,44 @@ function MultiDAlgorithmsPage() {
       </AppBar>
 
       {/* --- Algorithm Content --- */}
-      <div style={{ padding: '0px', minHeight: 'calc(100vh - 77px)' }}> 
-        <MultiDimAlgorithmViewer />
+      <div style={{ height: 'calc(100vh - 77px)', display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="h4" sx={{ marginBottom: '20px', color: '#666', padding: '20px 20px 0px 20px' }}>Multi-Dimensional Optimization Algorithms</Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gridTemplateRows: 'repeat(2, 1fr)', gap: '20px', padding: '0px 40px 20px 40px', flexGrow: 1 }}>
+          {multiDAlgorithmsData.map((algorithm) => (
+            <Link 
+              to={algorithm.route} 
+              key={algorithm.name} 
+              style={{ textDecoration: 'none', flexGrow: 1 }}
+            >
+              <Card 
+                sx={{ 
+                  backgroundColor: '#72A8C8', 
+                  color: 'white', 
+                  borderRadius: '8px',
+                  border: '1px solid white',
+                  height: '100%',
+                  width: '100%',
+                  '&:hover': { 
+                    backgroundColor: '#5a8fa8',
+                    cursor: 'pointer'
+                  }
+                }}
+              >
+                <Box sx={{ padding: '16px' }}>
+                  <Typography variant="h5" component="div" sx={{ textShadow: '1px 1px 0px black' }}>
+                    {algorithm.name}
+                  </Typography>
+                  <Typography sx={{ mb: 1.5 }} color="inherit">
+                    {algorithm.type}
+                  </Typography>
+                  <Typography variant="body2" color="inherit">
+                    {algorithm.description}
+                  </Typography>
+                </Box>
+              </Card>
+            </Link>
+          ))}
+        </Box>
       </div>
 
     </div>
@@ -125,3 +162,4 @@ function MultiDAlgorithmsPage() {
 }
 
 export default MultiDAlgorithmsPage;
+
