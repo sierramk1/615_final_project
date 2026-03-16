@@ -112,6 +112,25 @@ function MultiDAlgorithmsPage() {
             >
               Gen-AI Guide
             </Button>
+            <Button
+              component={Link}
+              to="/examples"
+              sx={{
+                color: '#666',
+                fontSize: '1.2em',
+                fontWeight: 'normal',
+                textDecoration: 'none',
+                textTransform: 'none',
+                minWidth: '180px',
+                padding: '0',
+                '&:hover': {
+                  backgroundColor: 'transparent',
+                  textDecoration: 'underline'
+                }
+              }}
+            >
+              Examples
+            </Button>
           </Box>
         </Toolbar>
       </AppBar>

@@ -10,6 +10,8 @@ import NewtonRaphsonPage from './components/OneDAlgos/NewtonRaphsonPage.jsx';
 import SecantPage from './components/OneDAlgos/SecantPage.jsx';
 import GradientDescentPage from './components/MultiDimAlgos/GradientDescentPage.jsx';
 import NewtonsMethodPage from './components/MultiDimAlgos/NewtonsMethodPage.jsx';
+import ExamplesPage from './components/ExamplesMode.jsx';
+import LinearRegressionExample from './components/Examples/LinearRegressionExample.jsx';
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
       <Route path="/multi-dimensional" element={<MultiDAlgorithmsPage />} />
       <Route path="/multi-dimensional-algorithms/gradient-descent" element={<GradientDescentPage />} />
       <Route path="/multi-dimensional-algorithms/newtons-method" element={<NewtonsMethodPage />} />
+      <Route path="/examples" element={<ExamplesPage />} />
+      <Route path="/examples/linear-regression" element={<LinearRegressionExample />} />
       <Route path="/gen-ai-guide" element={<BlogPage />} />
     </Routes>
   );

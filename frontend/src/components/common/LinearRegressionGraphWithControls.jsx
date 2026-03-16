@@ -1,16 +1,13 @@
 import React from 'react';
-import { Slider, Box, Button } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
-import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
-import ReplayIcon from '@mui/icons-material/Replay';
+import { Button, Box, Slider } from '@mui/material';
+import { SkipPrevious, PlayArrow, Pause, SkipNext, Replay } from '@mui/icons-material';
 import Plot from 'react-plotly.js';
 
 function LinearRegressionGraphWithControls({
-  plotData,
+  plotData = [],
   layout,
-  animationSteps,
+  config,
+  animationSteps = [],
   currentStepIndex,
   isPlaying,
   onPlayPause,
@@ -19,41 +16,111 @@ function LinearRegressionGraphWithControls({
   onReset,
   onSliderChange,
 }) {
-  const buttonSx = {
-    backgroundColor: '#72A8C8',
-    fontSize: '0.8em',
-    padding: '4px 12px',
-    '&:hover': {
-      backgroundColor: '#5a8fa8',
-    },
-  };
-
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Box sx={{ flex: 1, minHeight: 0 }}>
-        <Plot
-          data={plotData}
-          layout={layout}
-          useResizeHandler={true}
-          style={{ width: '100%', height: '100%' }}
-        />
-      </Box>
-      {animationSteps.length > 0 && (
-        <Box sx={{ padding: '10px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
-          <Button onClick={onPrevStep} disabled={currentStepIndex === 0} size="small" variant="contained" sx={buttonSx}>
-            <SkipPreviousIcon />
+    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {plotData.length > 0 ? (
+          <Box sx={{ borderRadius: '15px', overflow: 'hidden', backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', flex: 1, minHeight: 0 }}>
+            <Plot
+              data={plotData}
+              layout={layout}
+              config={config}
+              style={{ width: '100%', height: '100%' }}
+            />
+          </Box>
+        ) : (
+          <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '15px', overflow: 'hidden', backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <p style={{ fontSize: '0.9em' }}>No data to display. Please generate data first.</p>
+          </Box>
+        )}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: '8px',
+            justifyContent: 'center',
+            marginTop: '10px',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}
+        >
+          <Button
+            onClick={onPrevStep}
+            disabled={currentStepIndex === 0}
+            variant="contained"
+            size="small"
+            sx={{
+              backgroundColor: '#72A8C8',
+              fontSize: '0.8em',
+              padding: '4px 12px',
+              '&:hover': {
+                backgroundColor: '#5a8fa8',
+              },
+            }}
+          >
+            <SkipPrevious />
           </Button>
-          <Button onClick={onPlayPause} size="small" variant="contained" sx={buttonSx}>
-            {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+          <Button
+            onClick={onPlayPause}
+            disabled={animationSteps.length < 2}
+            variant="contained"
+            size="small"
+            sx={{
+              backgroundColor: '#72A8C8',
+              fontSize: '0.8em',
+              padding: '4px 12px',
+              '&:hover': {
+                backgroundColor: '#5a8fa8',
+              },
+            }}
+          >
+            {isPlaying ? <Pause /> : <PlayArrow />}
           </Button>
-          <Button onClick={onNextStep} disabled={currentStepIndex === animationSteps.length - 1} size="small" variant="contained" sx={buttonSx}>
-            <SkipNextIcon />
+          <Button
+            onClick={onNextStep}
+            disabled={currentStepIndex >= animationSteps.length - 1}
+            variant="contained"
+            size="small"
+            sx={{
+              backgroundColor: '#72A8C8',
+              fontSize: '0.8em',
+              padding: '4px 12px',
+              '&:hover': {
+                backgroundColor: '#5a8fa8',
+              },
+            }}
+          >
+            <SkipNext />
           </Button>
-          <Button onClick={onReset} size="small" variant="contained" sx={buttonSx}>
-            <ReplayIcon />
+          <Button
+            onClick={onReset}
+            disabled={animationSteps.length === 0}
+            variant="contained"
+            size="small"
+            sx={{
+              backgroundColor: '#72A8C8',
+              fontSize: '0.8em',
+              padding: '4px 12px',
+              '&:hover': {
+                backgroundColor: '#5a8fa8',
+              },
+            }}
+          >
+            <Replay />
           </Button>
+          <Slider
+            value={currentStepIndex}
+            onChange={(e, val) => onSliderChange(val)}
+            min={0}
+            max={animationSteps.length - 1}
+            step={1}
+            sx={{
+              color: '#72A8C8',
+              width: '200px',
+              marginLeft: '20px',
+            }}
+          />
         </Box>
-      )}
+      </Box>
     </Box>
   );
 }

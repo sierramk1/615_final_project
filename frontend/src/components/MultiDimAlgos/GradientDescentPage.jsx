@@ -3,8 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { TextField, Button, Alert, Typography, Box, Grid, ToggleButton, ToggleButtonGroup, AppBar, Toolbar, Menu, MenuItem, IconButton, FormControlLabel, Checkbox, FormControl, InputLabel, Select, Slider } from "@mui/material";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import GradientDescentComponent from './GradientDescentComponent';
-import LinearRegressionExample from "./LinearRegressionExample";
-import MultiDimFunctionMode from "../MultiDimFunctionMode";
 import multiDAlgorithmsData from './multiDAlgorithmsData';
 import { gradientDescent } from '../../js/gradient_descent.js';
 import * as math from 'mathjs';
@@ -51,13 +49,7 @@ function GradientDescentPage() {
     const [xAxisDim, setXAxisDim] = useState(0);
     const [yAxisDim, setYAxisDim] = useState(1);
     const [showGraph, setShowGraph] = useState(true);
-    const [mode, setMode] = useState("function");
 
-    const handleModeChange = (event, newMode) => {
-        if (newMode !== null) {
-            setMode(newMode);
-        }
-    };
     const pseudocodeContent = (
         <>
             <h4>Multi-dimensional Gradient Descent Pseudocode</h4>
